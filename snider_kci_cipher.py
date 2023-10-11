@@ -14,7 +14,7 @@ import hashlib
 # Assumptions: Infinite Mana, no Lands, no other cards in hand, no other cards in GY.
 
 
-def on_submit():
+def on_encrypt():
     # Store the values in variables
     k_value = key_entry.get()
     m_value = message_entry.get()
@@ -26,7 +26,6 @@ def on_submit():
     key_hash = int_to_n_bit_byte_hash(gen_key, block_size)
     msg_in = f"{msg}".encode('utf-8')
     ct = encrypt_ecb_with_padding(msg_in, key_hash, block_size)
-    pt = decrypt_ecb_with_padding(ct, key_hash, block_size)
 
     output_string = f"""
 ---INPUT VARIABLES---
@@ -37,6 +36,36 @@ hash_size: {pick_combobox.get()}
 ---OUTPUT VARIABLES---
 generated_key: {gen_key}
 ciphertext_out: 0x{ct.hex()}
+"""
+
+    # Insert the formatted output to the display
+    display_text.delete(1.0, tk.END)  # Clear existing text
+    display_text.insert(tk.END, output_string)
+    key_entry_1.delete(0, tk.END)  # Clear existing text
+    message_entry_1.delete(0, tk.END)  # Clear existing text
+    key_entry_1.insert(0, f"{k_value}")
+    message_entry_1.insert(0, f"0x{ct.hex()}")
+    pick_combobox_1.set(pick_combobox.get())
+
+
+def on_decrypt():
+    # Store the values in variables
+    k_value_1 = key_entry_1.get()
+    block_size = extract_leading_number(pick_combobox_1.get())
+    ct = bytes.fromhex(message_entry_1.get()[2:])
+    k = int_to_padded_binary_string(string_to_int_hash(k_value_1, block_size))
+    gen_key = key_gen_wrapper(k)
+    key_hash = int_to_n_bit_byte_hash(gen_key, block_size)
+    pt = decrypt_ecb_with_padding(ct, key_hash, block_size)
+
+    output_string = f"""
+---INPUT VARIABLES---
+key_in: "{k_value_1}"
+ciphertext_in: "0x{ct.hex()}"
+hash_size: {pick_combobox_1.get()}
+
+---OUTPUT VARIABLES---
+generated_key: {gen_key}
 plaintext_out: "{pt.decode('utf-8')}"
 """
 
@@ -394,30 +423,6 @@ def perform_kci_loop_s(s, i, loop_values):
     kci_loop_dict.get(s)(i, loop_values)
 
 
-def xor_with_key(data, key_int):
-    # Convert the integer key to bytes
-    key_bytes = int_to_bytes(key_int)
-
-    # Ensure the key length is 128 bits (16 bytes)
-    if len(key_bytes) != 16:
-        raise ValueError("Key must be 128 bits (16 bytes) in length.")
-
-    # Convert the data to bytes
-    if isinstance(data, str):
-        data_bytes = data.encode('utf-8')
-    elif isinstance(data, (bytes, bytearray)):
-        data_bytes = bytes(data)  # Convert bytearray to bytes if needed
-    else:
-        raise ValueError("Data must be a string, bytes, or bytearray.")
-
-    result_bytes = bytearray()
-    for i, byte in enumerate(data_bytes):
-        # XOR the byte with the corresponding key byte
-        result_bytes.append(byte ^ key_bytes[i % 16])
-
-    return result_bytes
-
-
 def key_gen_function(d, cd_b, nmp_b, gat_b, tos_b, sos_b):
     largest128bitint = 340282366920938463463374607431768211455
     return (numpy.power(d['cd'], cd_b + 1)
@@ -521,7 +526,7 @@ kci_loop_values = {
 
 root = tk.Tk()
 root.title("The Snider-KCI Cipher")
-root.geometry("800x600")
+root.geometry("800x750")
 root.configure(bg='white')
 
 # Font configurations
@@ -543,7 +548,7 @@ key_entry = ttk.Entry(main_frame, font=entry_font)
 key_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
 
 # Message Entry
-message_label = ttk.Label(main_frame, text="Message (m):", font=entry_font)
+message_label = ttk.Label(main_frame, text="Plaintext (p):", font=entry_font)
 message_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 message_entry = ttk.Entry(main_frame, font=entry_font)
 message_entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
@@ -557,18 +562,43 @@ pick_combobox.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
 pick_combobox.set(values[0])  # Set the first item as default
 
 # Submit Button
-submit_button = ttk.Button(main_frame, text="Submit", command=on_submit)
+submit_button = ttk.Button(main_frame, text="Encrypt", command=on_encrypt)
 submit_button.grid(row=4, column=0, columnspan=2, pady=20)
+
+# Key Entry
+key_label_1 = ttk.Label(main_frame, text="Key (k):", font=entry_font)
+key_label_1.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
+key_entry_1 = ttk.Entry(main_frame, font=entry_font)
+key_entry_1.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
+
+# Message Entry
+message_label_1 = ttk.Label(main_frame, text="Ciphertext (c):", font=entry_font)
+message_label_1.grid(row=6, column=0, sticky=tk.W, padx=5, pady=5)
+message_entry_1 = ttk.Entry(main_frame, font=entry_font)
+message_entry_1.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
+
+# Combobox for picking values
+pick_label_1 = ttk.Label(main_frame, text="Hash Size (h):", font=entry_font)
+pick_label_1.grid(row=7, column=0, sticky=tk.W, padx=5, pady=5)
+values_1 = ["64 bits", "128 bits", "256 bits"]
+pick_combobox_1 = ttk.Combobox(main_frame, values=values_1, font=entry_font)
+pick_combobox_1.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
+pick_combobox_1.set(values_1[0])  # Set the first item as default
+
+# Submit Button
+submit_button_1 = ttk.Button(main_frame, text="Decrypt", command=on_decrypt)
+submit_button_1.grid(row=8, column=0, columnspan=2, pady=20)
+
 
 # Display Text widget for output with a horizontal scrollbar
 display_label = ttk.Label(main_frame, text="Output:", font=entry_font)
-display_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
+display_label.grid(row=9, column=0, sticky=tk.W, padx=5, pady=5)
 display_text = tk.Text(main_frame, height=10, width=40, font=entry_font, wrap=tk.NONE)  # set wrap to NONE
-display_text.grid(row=6, column=0, columnspan=2, padx=5, sticky=tk.W+tk.E)
+display_text.grid(row=10, column=0, columnspan=2, padx=5, sticky=tk.W+tk.E)
 
 # Horizontal Scrollbar for the display_text
 x_scroll = ttk.Scrollbar(main_frame, orient="horizontal", command=display_text.xview)
-x_scroll.grid(row=7, column=0, columnspan=2, sticky=tk.W+tk.E)
+x_scroll.grid(row=11, column=0, columnspan=2, sticky=tk.W+tk.E)
 display_text.configure(xscrollcommand=x_scroll.set)
 
 # Make the Entry fields expand with the window resizing
