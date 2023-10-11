@@ -17,10 +17,8 @@ import hashlib
 def on_encrypt():
     # Store the values in variables
     k_value = key_entry.get()
-    m_value = message_entry.get()
-
-    msg = m_value
-    block_size = extract_leading_number(pick_combobox.get())
+    msg = message_entry.get()
+    block_size = extract_leading_number(rd_button_1.get())
     k = int_to_padded_binary_string(string_to_int_hash(k_value, block_size))
     gen_key = key_gen_wrapper(k)
     key_hash = int_to_n_bit_byte_hash(gen_key, block_size)
@@ -28,10 +26,12 @@ def on_encrypt():
     ct = encrypt_ecb_with_padding(msg_in, key_hash, block_size)
 
     output_string = f"""
+ENCRYPTION RESULTS:    
+    
 ---INPUT VARIABLES---
 key_in: "{k_value}"
-plaintext_in: "{m_value}"
-hash_size: {pick_combobox.get()}
+plaintext_in: "{msg}"
+hash_size: {rd_button_1.get()} bits
 
 ---OUTPUT VARIABLES---
 generated_key: {gen_key}
@@ -45,24 +45,31 @@ ciphertext_out: 0x{ct.hex()}
     message_entry_1.delete(0, tk.END)  # Clear existing text
     key_entry_1.insert(0, f"{k_value}")
     message_entry_1.insert(0, f"0x{ct.hex()}")
-    pick_combobox_1.set(pick_combobox.get())
+    rd_button_2.set(rd_button_1.get())
+
+    # Temporarily Enable Decryption Button
+    submit_button_1.config(state=tk.NORMAL)
 
 
 def on_decrypt():
     # Store the values in variables
     k_value_1 = key_entry_1.get()
-    block_size = extract_leading_number(pick_combobox_1.get())
+    block_size = extract_leading_number(rd_button_2.get())
     ct = bytes.fromhex(message_entry_1.get()[2:])
     k = int_to_padded_binary_string(string_to_int_hash(k_value_1, block_size))
+
+    # Generate Temp Key
     gen_key = key_gen_wrapper(k)
     key_hash = int_to_n_bit_byte_hash(gen_key, block_size)
     pt = decrypt_ecb_with_padding(ct, key_hash, block_size)
 
     output_string = f"""
+DECRYPTION RESULTS:
+
 ---INPUT VARIABLES---
 key_in: "{k_value_1}"
 ciphertext_in: "0x{ct.hex()}"
-hash_size: {pick_combobox_1.get()}
+hash_size: {rd_button_2.get()} bits
 
 ---OUTPUT VARIABLES---
 generated_key: {gen_key}
@@ -72,6 +79,9 @@ plaintext_out: "{pt.decode('utf-8')}"
     # Insert the formatted output to the display
     display_text.delete(1.0, tk.END)  # Clear existing text
     display_text.insert(tk.END, output_string)
+
+    # Re-Disable the Encryption Button
+    submit_button_1.config(state=tk.DISABLED)
 
 
 def extract_leading_number(s):
@@ -553,17 +563,29 @@ message_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 message_entry = ttk.Entry(main_frame, font=entry_font)
 message_entry.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
 
-# Combobox for picking values
-pick_label = ttk.Label(main_frame, text="Hash Size (h):", font=entry_font)
-pick_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
-values = ["64 bits", "128 bits", "256 bits"]
-pick_combobox = ttk.Combobox(main_frame, values=values, font=entry_font)
-pick_combobox.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
-pick_combobox.set(values[0])  # Set the first item as default
+# Radio buttons
+# Frame
+radio_frame_1 = tk.Frame(main_frame, bd=2, relief="groove")
+radio_frame_1.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+# Init rd_button_1
+rd_button_1 = tk.StringVar(value="64")
+
+# Pick Label
+pick_label_1 = ttk.Label(main_frame, text="Hash Size (h):", font=entry_font)
+pick_label_1.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+
+# Radio Buttons 3 side-by-side
+radio1 = tk.Radiobutton(radio_frame_1, text="64 bit", variable=rd_button_1, value="64")
+radio1.grid(row=0, column=0, pady=10, padx=10)
+radio2 = tk.Radiobutton(radio_frame_1, text="128 bit", variable=rd_button_1, value="128")
+radio2.grid(row=0, column=1, pady=10, padx=10)
+radio3 = tk.Radiobutton(radio_frame_1, text="256 bit", variable=rd_button_1, value="256")
+radio3.grid(row=0, column=2, pady=10, padx=10)
 
 # Submit Button
-submit_button = ttk.Button(main_frame, text="Encrypt", command=on_encrypt)
-submit_button.grid(row=4, column=0, columnspan=2, pady=20)
+submit_button = ttk.Button(radio_frame_1, text="Encrypt", command=on_encrypt)
+submit_button.grid(row=0, column=3, pady=10, padx=10, columnspan=1)
 
 # Key Entry
 key_label_1 = ttk.Label(main_frame, text="Key (k):", font=entry_font)
@@ -577,29 +599,45 @@ message_label_1.grid(row=6, column=0, sticky=tk.W, padx=5, pady=5)
 message_entry_1 = ttk.Entry(main_frame, font=entry_font)
 message_entry_1.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
 
-# Combobox for picking values
+# init rd_button_2
+rd_button_2 = tk.StringVar(value="64")
+
+# init radio_frame_2
+radio_frame_2 = tk.Frame(main_frame, bd=2, relief="groove")
+radio_frame_2.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
+
+# Radio buttons
 pick_label_1 = ttk.Label(main_frame, text="Hash Size (h):", font=entry_font)
 pick_label_1.grid(row=7, column=0, sticky=tk.W, padx=5, pady=5)
-values_1 = ["64 bits", "128 bits", "256 bits"]
-pick_combobox_1 = ttk.Combobox(main_frame, values=values_1, font=entry_font)
-pick_combobox_1.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W+tk.E)
-pick_combobox_1.set(values_1[0])  # Set the first item as default
+
+# Radio Buttons 3 side-by-side
+radio4 = tk.Radiobutton(radio_frame_2, text="64 bit", variable=rd_button_2, value="64", state=tk.DISABLED)
+radio4.grid(row=0, column=0, pady=10, padx=10)
+radio5 = tk.Radiobutton(radio_frame_2, text="128 bit", variable=rd_button_2, value="128", state=tk.DISABLED)
+radio5.grid(row=0, column=1, pady=10, padx=10)
+radio6 = tk.Radiobutton(radio_frame_2, text="256 bit", variable=rd_button_2, value="256", state=tk.DISABLED)
+radio6.grid(row=0, column=2, pady=10, padx=10)
 
 # Submit Button
-submit_button_1 = ttk.Button(main_frame, text="Decrypt", command=on_decrypt)
-submit_button_1.grid(row=8, column=0, columnspan=2, pady=20)
+submit_button_1 = ttk.Button(radio_frame_2, text="Decrypt", command=on_decrypt, state=tk.DISABLED)
+submit_button_1.grid(row=0, column=4, pady=10, padx=10, columnspan=1)
 
 
 # Display Text widget for output with a horizontal scrollbar
 display_label = ttk.Label(main_frame, text="Output:", font=entry_font)
 display_label.grid(row=9, column=0, sticky=tk.W, padx=5, pady=5)
-display_text = tk.Text(main_frame, height=10, width=40, font=entry_font, wrap=tk.NONE)  # set wrap to NONE
+display_text = tk.Text(main_frame, height=14, width=40, font=entry_font, wrap=tk.NONE)  # set wrap to NONE
 display_text.grid(row=10, column=0, columnspan=2, padx=5, sticky=tk.W+tk.E)
 
 # Horizontal Scrollbar for the display_text
 x_scroll = ttk.Scrollbar(main_frame, orient="horizontal", command=display_text.xview)
 x_scroll.grid(row=11, column=0, columnspan=2, sticky=tk.W+tk.E)
 display_text.configure(xscrollcommand=x_scroll.set)
+
+# Horizontal Scrollbar for the display_text
+y_scroll = ttk.Scrollbar(main_frame, orient="vertical", command=display_text.yview)
+y_scroll.grid(row=10, column=4, rowspan=10, sticky=tk.W+tk.E)
+display_text.configure(yscrollcommand=y_scroll.set)
 
 # Make the Entry fields expand with the window resizing
 main_frame.columnconfigure(1, weight=1)
