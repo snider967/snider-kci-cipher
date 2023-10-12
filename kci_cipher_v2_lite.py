@@ -1,9 +1,21 @@
-def key_gen_loop_wrapper(key_in, msg_len):
-    k_0 = key_gen_wrapper(key_in)
-    while len(k_0) < msg_len:
-        k_i = key_gen_wrapper(k_0)
-        k_0 = k_i + k_0
-    return k_0
+# In this iteration we will assume a fixed length 64-bit integer for a key.
+# I am also attempting my own form of stream cipher, by intentionally creating a key >= length of the list.
+# Once I have created the key I plan to split it to be the exact
+
+
+def key_gen_loop_wrapper(key_in, msg_bit_len):
+    k = int_to_padded_binary_string(key_in)
+    k_gen = key_gen_wrapper(k)
+    k_arr = [k_gen]
+    count = 0
+
+    # Loop to extend the key to the requisite length
+    while len(k_gen) < msg_bit_len:
+        k_arr.append(key_gen_wrapper(k_arr[count]))
+        k_gen = k_arr[count + 1] + k_gen
+        count += 1
+
+    return k_gen
 
 
 def key_gen_wrapper(provided_key):
