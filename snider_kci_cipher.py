@@ -158,10 +158,6 @@ def binary_string_to_int(bin_str):
     return int(bin_str, 2)
 
 
-def int_to_bytes(val, length=16):
-    return val.to_bytes(length, byteorder='big')
-
-
 def reset_dict(vd):
     vd['cd'] = 0
     vd['mpil'] = 0
