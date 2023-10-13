@@ -1,42 +1,69 @@
 # In this iteration we will assume a fixed length 64-bit integer for a key.
 # I am also attempting my own form of stream cipher, by intentionally creating a key >= length of the list.
-# Once I have created the key I plan to split it to be the exact
+# Once I have created the key I plan to split it to be the exact length of the message in bits.
+
+import random
+import timeit
+import numpy as np
 
 
-def key_gen_loop_wrapper(key_in, msg_bit_len):
-    k = int_to_padded_binary_string(key_in)
-    k_gen = key_gen_wrapper(k)
+def test_function():
+    key_gen_loop_wrapper(int(9912795221406777741).to_bytes(8,'big'), 8)  # Replace with actual test parameters
+
+
+def xor_bytes(b1, b2):
+    return bytes([a ^ b for a, b in zip(b1, b2)])
+
+
+def enc(k, m):
+    msg_m = m.encode('ascii')
+    key = k.to_bytes(8, 'big')  # 64-bit integer to bytes
+    generated_key = key_gen_loop_wrapper(key, len(msg_m))
+    if len(generated_key) == len(msg_m):
+        return [generated_key, xor_bytes(generated_key, msg_m)]
+    else:
+        return [generated_key, xor_bytes(generated_key[:len(msg_m)], msg_m)]
+
+
+def dec(k, c):
+    return xor_bytes(k, c).decode('ascii')
+
+
+def key_gen_loop_wrapper(key_in, msg_byte_len):
+    k_gen = key_gen_wrapper(key_in)
     k_arr = [k_gen]
     count = 0
 
     # Loop to extend the key to the requisite length
-    while len(k_gen) < msg_bit_len:
+    while len(k_gen) < msg_byte_len:
         k_arr.append(key_gen_wrapper(k_arr[count]))
-        k_gen = k_arr[count + 1] + k_gen
+        k_gen += k_arr[count + 1]
         count += 1
 
     return k_gen
 
 
 def key_gen_wrapper(provided_key):
-    start_state = get_3_most_significant_bits(provided_key)
-    cd_bool = get_nth_bit_from_end(provided_key, 3)
-    nmp_bool = get_nth_bit_from_end(provided_key, 4)
-    gat_bool = get_nth_bit_from_end(provided_key, 5)
-    tos_bool = get_nth_bit_from_end(provided_key, 6)
-    sos_bool = get_nth_bit_from_end(provided_key, 7)
-    iterations = get_bits_before_position_n(provided_key, 7)
-    perform_kci_loop_s(binary_string_to_int(start_state), binary_string_to_int(iterations), kci_loop_values)
-    result = key_gen_function(kci_loop_values, binary_string_to_int(cd_bool), binary_string_to_int(nmp_bool),
-                              binary_string_to_int(gat_bool), binary_string_to_int(tos_bool),
-                              binary_string_to_int(sos_bool))
-    return result
+    # Extracting bits and converting them to integers
+    first_byte = provided_key[0]  # Get the first byte
+    start_state = first_byte >> 5  # Right shift to get the 3 most significant bits
+    cd_bool = (provided_key[-1] & (1 << 2)) >> 2
+    nmp_bool = (provided_key[-1] & (1 << 3)) >> 3
+    gat_bool = (provided_key[-1] & (1 << 4)) >> 4
+    tos_bool = (provided_key[-1] & (1 << 5)) >> 5
+    sos_bool = (provided_key[-1] & (1 << 6)) >> 6
+    iterations = int.from_bytes(provided_key[:-1], 'big')
+
+    perform_kci_loop_s(start_state, iterations, kci_loop_values)
+
+    result = key_gen_function(kci_loop_values, cd_bool, nmp_bool,
+                              gat_bool, tos_bool, sos_bool)
+    return result.to_bytes(16, 'big')  # Convert the int back to bytes
 
 
 def key_gen_function(d, cd_b, nmp_b, gat_b, tos_b, sos_b):
-    return int_to_padded_binary_string(
-        (d['cd'] * cd_b + d['nmp'] * nmp_b + d['gat'] * gat_b + d['tos'] * tos_b + d['sos'] * sos_b
-         + d['mpil'] * d['msil']) % 18446744073709551615)
+    return (100 * (d['cd'] * cd_b + d['nmp'] * nmp_b) * 2 * d['msil'] + d['gat'] * gat_b + 2 + d['tos'] * tos_b
+            + d['sos'] * sos_b + d['mpil'] * d['msil']) % 340282366920938463463374607431768211455
 
 
 def perform_kci_loop_s(s, i, loop_values):
@@ -333,35 +360,59 @@ kci_loop_values = {
 }
 
 
-def int_to_padded_binary_string(n):
-    bin_str = bin(n)[2:]  # Convert to binary and remove the "0b" prefix
-    bit_length = len(bin_str)
-
-    # Determine the required width based on bit length
-    if bit_length <= 64:
-        width = 64
-    elif bit_length <= 128:
-        width = 128
-    else:
-        width = 256
-
-    return bin_str.rjust(width, '0')
+def random_64bit_integer():
+    return random.randint(0, (1 << 64) - 1)
 
 
-def get_3_most_significant_bits(key):
-    return key[:3]
+# Main Program
+# Input
+r_key = random_64bit_integer()
+msg = "Hello my name is Dan"
 
+# Output
+print(f"--- ENCRYPTION --- "
+      f"\nINPUT: "
+      f"\nk = {r_key}"
+      f"\nm = {msg}\n")
 
-def get_nth_bit_from_end(key, n):
-    try:
-        return key[n]
-    except IndexError:
-        return '0'
+ct_n_key = enc(r_key, msg)
+print(f"OUTPUT:"
+      f"\nk_g = {ct_n_key[0]}"
+      f"\nc = {ct_n_key[1]}"
+      f"\n")
 
+# Output Decryption
+print(f"--- Decryption --- "
+      f"\nINPUT: "
+      f"\nk_g = {ct_n_key[0].hex()}"
+      f"\nc = {ct_n_key[1].hex()}"
+      f"\n")
 
-def get_bits_before_position_n(key, n):
-    return key[n:]
+pt = dec(ct_n_key[0], ct_n_key[1])
 
+print(f"OUTPUT: "
+      f"\np_t = {pt}"
+      f"\n")
 
-def binary_string_to_int(bin_str):
-    return int(bin_str, 2)
+print_kci_dictionary(kci_loop_values)
+
+# # Number of times to run the function and collect timing samples
+# NUM_RUNS = 10000
+#
+# # Run timeit.repeat to collect multiple timing samples
+# timings = timeit.repeat(test_function, repeat=NUM_RUNS, number=1)
+#
+# # Use numpy for statistical analysis
+# mean_time = np.mean(timings)
+# std_dev_time = np.std(timings)
+#
+# print(f"Average time taken for {NUM_RUNS} runs: {mean_time:.10f} seconds")
+# print(f"Standard deviation: {std_dev_time:.10f} seconds")
+#
+# # Assuming an average clock speed of 3GHz for your CPU,
+# # you can convert the time to clock cycles:
+# CLOCK_SPEED_GHZ = 3.0
+# average_clock_cycles = (mean_time * CLOCK_SPEED_GHZ * 10**9)/8
+# print(f"Average clock cycles per byte: {average_clock_cycles:.2f}")
+#
+#
