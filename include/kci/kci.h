@@ -1,6 +1,6 @@
 /*
  * KCI-20: an experimental stream cipher whose key chooses the Krark-Clan Ironworks loops it plays.
- * Spec: vault/Refactor/KCI-Primitive-Design.md (v0.2).
+ * Spec: vault/Refactor/KCI-Primitive-Design.md (v0.3).
  *
  * WARNING: original, unreviewed cryptography. For research and fun; do not protect real data with it.
  *
@@ -75,10 +75,12 @@ void kci_key_setup(kci_key *k, const uint8_t key[KCI_KEY_BYTES]);
 void kci_block(uint8_t out[KCI_BLOCK_BYTES], const kci_key *k, uint32_t ctr,
                const uint8_t nonce[KCI_NONCE_BYTES]);
 
-/* Raw stream mode (spec 5). Start at counter 1 for files (counter 0 is the AEAD MAC key block). */
-void kci_stream_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES], uint32_t ctr0);
+/* Raw stream mode (spec 5, v0.3): keystream from the raw-mode constants, counters 1 .. 2^32 - 1.
+ * It never equals the AEAD keystream, so raw and AEAD ciphertexts cannot stand in for each other (D-024).
+ * No integrity check: raw ciphertext is malleable. Prefer the AEAD calls below. */
+void kci_raw_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES]);
 
-/* out = in XOR keystream. Encrypt == decrypt. in and out may be the same buffer.
+/* out = in XOR keystream (raw mode). Encrypt == decrypt. in and out may be the same buffer.
  * Returns KCI_ERR_LIMIT, writing nothing, if len exceeds the keystream left before the counter limit. */
 int kci_stream_xor(kci_stream *s, uint8_t *out, const uint8_t *in, size_t len);
 

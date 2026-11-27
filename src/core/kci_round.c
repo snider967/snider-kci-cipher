@@ -23,6 +23,7 @@ const uint32_t kci_loop_packed[KCI_LOOPS] = {
 };
 
 const uint32_t kci_stack_const[4] = { 0x2049434bu, 0x2d363532u, 0x20746962u, 0x706f6f6cu };
+const uint32_t kci_raw_const[4]   = { 0x2049434bu, 0x2d363532u, 0x20746962u, 0x21776172u };
 const uint32_t kci_deck_const[4]  = { 0x2049434bu, 0x66756873u, 0x20656c66u, 0x6b636564u };
 
 /* Rotate by a (possibly secret) amount. Branch-free; compiles to rol/ror on x86 and ARM. */

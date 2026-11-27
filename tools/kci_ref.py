@@ -1,4 +1,4 @@
-"""KCI-20 reference sketch, spec v0.2 (see vault/Refactor/KCI-Primitive-Design.md).
+"""KCI-20 reference sketch, spec v0.3 (see vault/Refactor/KCI-Primitive-Design.md).
 
 Spec check only. KATs come from the portable C path. Experimental, unreviewed cipher.
 Run:  python3 -I tools/kci_ref.py          (checks + provisional KAT)
@@ -17,7 +17,8 @@ PHI = 0x9E3779B9
 
 # Rotation sets per loop: LOOP_ROT = FROZEN below (output of search_rotations(); rho1, rho3 in {8,16,24})
 
-STACK_CONST = struct.unpack('<4I', b'KCI 256-bit loop')   # keystream blocks
+STACK_CONST = struct.unpack('<4I', b'KCI 256-bit loop')   # AEAD mode: MAC key block + message keystream
+RAW_CONST   = struct.unpack('<4I', b'KCI 256-bit raw!')   # raw mode keystream (spec v0.3 domain separation, D-024)
 DECK_CONST  = struct.unpack('<4I', b'KCI shuffle deck')   # key setup (domain separation)
 CHACHA_CONST = struct.unpack('<4I', b'expand 32-byte k')  # cross-check build only
 SETUP_SCHED = [r % 8 for r in range(20)]                  # fixed public schedule used only to shuffle the deck
@@ -60,7 +61,11 @@ class Key:
         self.rots = [LOOP_ROT[s] for s in self.deck]
         self.rcs = [rc(r, s) for r, s in enumerate(self.deck)]
     def block(self, ctr, nonce):
+        """AEAD-domain block (counter 0 = Poly1305 key, 1.. = message keystream)."""
         return struct.pack('<16I', *core(STACK_CONST, self.key, ctr, nonce, self.rots, self.rcs))
+    def block_raw(self, ctr, nonce):
+        """Raw-mode block: same deck, raw-mode constants, so it never equals an AEAD block."""
+        return struct.pack('<16I', *core(RAW_CONST, self.key, ctr, nonce, self.rots, self.rcs))
 
 # ---------- Poly1305 and AEAD (spec 7: RFC 8439 composition with KCI-20) ----------
 P1305 = (1 << 130) - 5

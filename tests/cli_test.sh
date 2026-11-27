@@ -89,7 +89,10 @@ check "raw file refused without --raw on dec" '! dec_try -k key r && [ ! -e out 
 cp c.65537 t; flip t 4
 check "downgrade (AEAD file, mode byte flipped to raw) refused" '! dec_try -k key t && [ ! -e out ] && no_tmp'
 rm -f out; "$KCI" dec --raw -k key t out 2>/dev/null; rc=$?
-check "with an explicit --raw a downgraded file still decrypts, tag as 16 junk bytes (documented risk)" '[ $rc = 0 ] && [ "$(size out)" = $((65537 + 16)) ]'
+check "downgraded file with --raw decrypts to garbage (raw keystream is separate, D-024)" \
+    '[ $rc = 0 ] && python3 -I -c "import sys; a=open(\"p.65537\",\"rb\").read(); b=open(\"out\",\"rb\").read(); sys.exit(0 if sum(x==y for x,y in zip(a,b)) < 1024 else 1)"'
+cp r t; flip t 4
+check "upgrade (raw file relabelled as AEAD) fails authentication" 'dec_try -k key t; [ $? = 2 ] && [ ! -e out ] && no_tmp'
 check "raw mode warns" '"$KCI" enc -f --raw -k key p.17 r 2>&1 >/dev/null | grep -q warning'
 cp r t; flip t 45
 "$KCI" dec -f --raw -k key t dr 2>/dev/null

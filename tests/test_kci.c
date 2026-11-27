@@ -1,4 +1,4 @@
-/* KCI-20 unit tests and known-answer tests (spec v0.2).
+/* KCI-20 unit tests and known-answer tests (spec v0.3).
  * Copyright 2026 snider967. Licensed under the Apache License, Version 2.0. */
 #include <stdio.h>
 #include <string.h>
@@ -130,6 +130,28 @@ static void test_stream(void) {
     }
     CHECK(pos == sizeof buf, "chunk list covers the vector");
     CHECK(memcmp(buf, pt, sizeof pt) == 0, "chunked in-place decrypt round trip");
+    kci_stream_wipe(&s);
+    kci_key_wipe(&k);
+}
+
+static void test_raw_mode(void) {
+    uint8_t pt[KAT_STREAM_LEN], buf[KAT_STREAM_LEN];
+    kci_key k; kci_stream s;
+    for (int i = 0; i < KAT_STREAM_LEN; i++) pt[i] = (uint8_t)(i * 7 + 3);
+    kci_key_setup(&k, kat_stream_key);
+    kci_raw_init(&s, &k, kat_stream_nonce);
+    CHECK(kci_stream_xor(&s, buf, pt, sizeof pt) == KCI_OK && memcmp(buf, kat_raw_ct, sizeof buf) == 0, "raw-mode KAT");
+    CHECK(memcmp(buf, kat_stream_ct, 64) != 0, "raw keystream must differ from the AEAD-domain keystream (D-024)");
+
+    /* AEAD ciphertext of the same message is the AEAD-domain stream, not the raw one */
+    uint8_t ct[KAT_STREAM_LEN], tag[16];
+    kci_aead_encrypt(ct, tag, pt, sizeof pt, NULL, 0, &k, kat_stream_nonce);
+    CHECK(memcmp(ct, kat_stream_ct, sizeof ct) == 0, "AEAD body = AEAD-domain keystream");
+    CHECK(memcmp(ct, kat_raw_ct, 64) != 0, "AEAD ciphertext != raw ciphertext");
+
+    kci_raw_init(&s, &k, kat_stream_nonce);
+    CHECK(kci_stream_xor(&s, buf, buf, sizeof buf) == KCI_OK && memcmp(buf, pt, sizeof pt) == 0, "raw-mode decrypt");
+    CHECK(memcmp(k.c, kci_stack_const, 16) == 0, "kci_raw_init must not change the caller's key");
     kci_stream_wipe(&s);
     kci_key_wipe(&k);
 }
@@ -391,6 +413,7 @@ int main(void) {
     test_single_loop();
     test_reduced_rounds();
     test_stream();
+    test_raw_mode();
     test_counter_limit();
     test_poly1305();
     test_poly1305_edges();

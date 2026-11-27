@@ -1,4 +1,4 @@
-"""Independent Python reader/writer for KCI-20 file format v1 (spec section 10), built only on tools/kci_ref.py
+"""Independent Python reader/writer for KCI-20 file format v1 (spec v0.3 section 10), built only on tools/kci_ref.py
 and hashlib. Used by tests/cli_test.sh to cross-check the C CLI. Slow (pure Python); small files only.
 
   python3 -I tools/kci_file.py dec (--key-file K | --password-file P) IN OUT
@@ -12,10 +12,10 @@ import kci_ref as K  # noqa: E402
 
 MAGIC = b'KCI\x01'
 
-def keystream_xor(k, nonce, data):
+def keystream_xor(k, nonce, data, raw=False):
     out = bytearray()
     for i in range(0, len(data), 64):
-        blk = k.block(1 + i // 64, nonce)
+        blk = (k.block_raw if raw else k.block)(1 + i // 64, nonce)
         out += bytes(a ^ b for a, b in zip(data[i:i + 64], blk))
     return bytes(out)
 
@@ -39,7 +39,7 @@ def main(argv):
         hdr = MAGIC + bytes([1 if raw else 0, 1 if pw_mode else 0, 0, 0]) + struct.pack('<I', it if pw_mode else 0) + salt + nonce
         k = K.Key(key_from(args, salt, it))
         if raw:
-            body = keystream_xor(k, nonce, data)
+            body = keystream_xor(k, nonce, data, raw=True)
         else:
             ct, tag = K.aead_encrypt(k.block, nonce, data, hdr)
             body = ct + tag
@@ -52,7 +52,7 @@ def main(argv):
         salt, nonce = hdr[12:28], hdr[28:40]
         k = K.Key(key_from(args, salt, it))
         if mode == 1:
-            open(dst, 'wb').write(keystream_xor(k, nonce, body))
+            open(dst, 'wb').write(keystream_xor(k, nonce, body, raw=True))
             return 0
         ct, tag = body[:-16], body[-16:]
         _, expect = K.aead_encrypt(k.block, nonce, keystream_xor(k, nonce, ct), hdr)

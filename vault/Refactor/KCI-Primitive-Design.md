@@ -1,11 +1,15 @@
 # KCI Primitive Design: KCI-20 spec
 
-Back to [[00-Index]] · Decisions: D-007, D-009, D-010, D-012..D-022 in [[Decisions-Log]] · Layout: [[C-Architecture-Plan]] · Speed: [[Performance-Notes]]
+Back to [[00-Index]] · Decisions: D-007, D-009, D-010, D-012..D-024 in [[Decisions-Log]] · Layout: [[C-Architecture-Plan]] · Speed: [[Performance-Notes]]
 
-**Status:** **v0.2 accepted** by the owner on 2026-11-27 (P1–P6 → D-017..D-022). No C code yet. Changes from here need a new version and a decision entry.
+**Status:** **v0.3 accepted** (2026-11-27). v0.2 was signed off as P1–P6 → D-017..D-022. v0.3 adds raw/AEAD domain separation (Q19 → D-024).
+Implemented in C on `c-refactor`. Changes from here need a new version and a decision entry.
 Reference sketch: `tools/kci_ref.py` (pure Python, used to check this spec; it is not the KAT source).
 
 > ⚠️ KCI-20 is an original, unreviewed cipher. It is for research and fun. Do not present it as secure for real data.
+
+**Changes in v0.3:** raw mode gets its own stack constants (`"KCI 256-bit raw!"`), so raw and AEAD keystreams never coincide
+(§4.1, §5). This closes the mode-downgrade the CLI tests found in v0.2.
 
 **Changes from v0.1:** the owner rejected the fixed schedule and the near-ChaCha20 core (D-016). The key now picks
 which KCI loop each round plays. Each loop has its own rotation amounts and round constant. Measured cost on AVX2: none (§11).
@@ -70,14 +74,17 @@ All words are **little-endian** on every target.
 
 | Row | Words | Zone | Contents |
 |---|---|---|---|
-| 0 | S0–S3 | **Stack** | constants (keystream: `"KCI 256-bit loop"`; key setup: `"KCI shuffle deck"`) |
+| 0 | S0–S3 | **Stack** | constants by domain: AEAD `"KCI 256-bit loop"`, raw `"KCI 256-bit raw!"`, key setup `"KCI shuffle deck"` |
 | 1 | S4–S7 | **Battlefield** | key words 0–3 |
 | 2 | S8–S11 | **Hand** | key words 4–7 |
 | 3 | S12–S15 | **Library** | S12 = block counter, S13–S15 = nonce words 0–2 |
 
 Constant words (LE):
 - `"KCI 256-bit loop"` = `0x2049434b 0x2d363532 0x20746962 0x706f6f6c`
+- `"KCI 256-bit raw!"` = `0x2049434b 0x2d363532 0x20746962 0x21776172` (v0.3)
 - `"KCI shuffle deck"` = `0x2049434b 0x66756873 0x20656c66 0x6b636564`
+
+Each domain gets its own block outputs. The deck itself (key setup) is shared, because it depends only on the key.
 
 ### 4.2 Key setup: shuffling the deck
 Once per key:
@@ -140,19 +147,21 @@ and rotational symmetries and remove the all-zero fixed point (R4).
 running the rounds backwards from known keystream (fixes the v2 inversion).
 
 ## 5. Stream encryption (raw mode)
-- Keystream = `block(key, 1, nonce) ‖ block(key, 2, nonce) ‖ …`. Counter 0 is reserved for the AEAD MAC key (§7),
-  so raw and AEAD modes give the **same ciphertext bytes**. Raw mode just leaves out the tag.
+- Keystream = `block_raw(key, 1, nonce) ‖ block_raw(key, 2, nonce) ‖ …`, where `block_raw` is the block function with the
+  **raw-mode stack constants** (v0.3, D-024). The AEAD message keystream uses the AEAD constants, so the two modes never share
+  keystream or ciphertext. (In v0.2 they were identical, which allowed the downgrade below.) Counters run from 1, giving both modes the same length limit.
 - `ct = pt ⊕ keystream`; decryption is the same operation (R2: needs only key + nonce).
 - The last partial block uses the leading bytes of its keystream block.
 - **Rule: never reuse a (key, nonce) pair.** The CLI generates a random 96-bit nonce per message. Under one key that
   stays safe up to about 2³² messages; password mode (§6) uses a fresh salt, so a fresh key (and a fresh deck), every time anyway.
 - ⚠️ Raw mode is **malleable**: flipping a ciphertext bit flips the same plaintext bit, and nothing detects it. The CLI
   only offers it behind an explicit `--raw` flag with a warning.
-- ⚠️ **Downgrade finding (Session 02, found by the CLI tests):** raw and AEAD files share the same ciphertext, so flipping the header's
-  mode byte from 0 to 1 turns an authenticated file into a "raw" one. A decrypter that trusts the mode byte then skips the tag and
-  accepts any further tampering. **Implemented mitigation (D-023):** `kci dec` refuses raw-mode files unless the user passes `--raw`.
-  **Proposed spec fix (Q19, owner decision):** domain-separate the two modes, e.g. raw mode uses its own stack constants, so a
-  downgraded file decrypts to garbage and raw ciphertext can never be passed off as AEAD ciphertext.
+- ⚠️ **Downgrade finding (v0.2, found by the CLI tests) and fix:** in v0.2, raw and AEAD files shared their ciphertext. Flipping the
+  header's mode byte turned an authenticated file into a "raw" one, which a decrypter would accept with no check. Two defences now:
+  1. **v0.3 domain separation (D-024):** a downgraded file decrypts to garbage, and a raw file relabelled as AEAD fails its tag check.
+  2. **CLI (D-023):** `kci dec` refuses raw-mode files unless the user passes `--raw`.
+- In the C API, raw mode is `kci_raw_init` + `kci_stream_xor`. The general `kci_stream_init` is internal, so callers cannot rebuild the
+  v0.2 mistake by using the AEAD-domain keystream as "raw mode".
 
 ## 6. Password front end (v1 heritage, D-014)
 - `key = PBKDF2-HMAC-SHA256(password, salt, iterations, 32 bytes)`. The key then shuffles its deck (§4.2). This is where the v1 idea
@@ -203,7 +212,7 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 - **P2** 8 loop rotation sets with the byte/any split (§4.3), table as given; round constants `RC(r, s)` (§4.4).
 - **P3** 20 rounds, 32-bit counter, counter 0 reserved for the MAC key.
 - **P4** KDF = PBKDF2-HMAC-SHA256, 16-byte salt, 600 000 iterations by default (§6).
-- **P5** AEAD = RFC 8439 composition with Poly1305; raw mode = same ciphertext with no tag, behind `--raw` (§5, §7).
+- **P5** AEAD = RFC 8439 composition with Poly1305; raw mode behind `--raw` (§5, §7). v0.3 (D-024): raw mode uses its own constants, no longer the AEAD ciphertext minus the tag.
 - **P6** File format below.
 
 ### File format v1 (CLI)
@@ -222,6 +231,9 @@ end-16 16    tag        (AEAD only)
 In AEAD mode the 40-byte header is the AAD, so changing any header field makes decryption fail.
 
 ## 11. Verified so far (Session 02, 2026-11-27)
+**v0.3 (implemented in C):** see [[Test-Vector-Strategy]]. As of v0.3: 1141 library checks and 67 CLI checks, all cross-checked against the
+Python reference. The values below are from the design stage (v0.2) and are unchanged by v0.3: the AEAD-domain block and the deck did not change.
+
 **Correctness and diffusion** (`python3 -I tools/kci_ref.py`):
 - **Kernel cross-check:** with ChaCha rotations in every round, round constants off and ChaCha constants, the data-driven kernel reproduces
   the **RFC 8439 §2.3.2** block (first 16 bytes `10f1e7e4d13b5915500fdd1fa32071c4`).

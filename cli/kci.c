@@ -222,7 +222,7 @@ static int cmd_enc(int argc, char **argv)
     if (tmp_open(&t, o.out)) goto out;
     if (fwrite(hdr, 1, HDR_BYTES, t.f) != HDR_BYTES) { fail("write error", o.out); goto out; }
 
-    if (o.raw) kci_stream_init(&s, &k, hdr + 28, 1);
+    if (o.raw) kci_raw_init(&s, &k, hdr + 28);
     else       kci_aead_init(&a, &k, hdr + 28, hdr, HDR_BYTES);   /* the header is the AAD */
     for (;;) {
         size_t n = fread(inbuf, 1, CHUNK, in);
@@ -297,7 +297,7 @@ static int cmd_dec(int argc, char **argv)
     if (tmp_open(&t, o.out)) goto out;
 
     if (mode == MODE_RAW) {
-        kci_stream_init(&s, &k, hdr + 28, 1);
+        kci_raw_init(&s, &k, hdr + 28);
         for (;;) {
             size_t n = fread(inbuf, 1, CHUNK, in);
             if (n == 0) break;

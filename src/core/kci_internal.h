@@ -10,7 +10,8 @@
 /* Normative tables (spec 4.3); tools/kci_ref.py FROZEN / PACKED must match. */
 extern const uint8_t  kci_loop_rot[KCI_LOOPS][4];
 extern const uint32_t kci_loop_packed[KCI_LOOPS];
-extern const uint32_t kci_stack_const[4];   /* "KCI 256-bit loop" */
+extern const uint32_t kci_stack_const[4];   /* "KCI 256-bit loop": AEAD mode */
+extern const uint32_t kci_raw_const[4];     /* "KCI 256-bit raw!": raw mode (v0.3, D-024) */
 extern const uint32_t kci_deck_const[4];    /* "KCI shuffle deck" */
 
 static inline uint32_t kci_load32(const uint8_t *p) {
@@ -24,6 +25,10 @@ static inline void kci_store32(uint8_t *p, uint32_t v) {
  * Also used by the RFC 8439 kernel cross-check test with ChaCha's rotations and zero round constants. */
 void kci_core(uint32_t out[16], const uint32_t in[16],
               const uint8_t rot[][4], const uint32_t rc[], int rounds);
+
+/* Keystream under the key's own constants (AEAD domain for a key from kci_key_setup), from counter ctr0.
+ * Internal on purpose: as a public "raw mode" it would recreate the v0.2 downgrade. Use kci_raw_init. */
+void kci_stream_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES], uint32_t ctr0);
 
 /* kci_block with the nonce as words and caller-owned scratch (32 words) that the caller wipes once. */
 void kci_block_words(uint8_t out[KCI_BLOCK_BYTES], const kci_key *k, uint32_t ctr,
