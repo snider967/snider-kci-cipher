@@ -3,7 +3,7 @@
 > Knowledge base for the **Python → C refactor** of `snider-kci-cipher`.
 > Obsidian-compatible (double-bracket wikilinks). Keep this index current whenever a note is added/renamed.
 
-**Status:** Phase 2 in progress: spec **v0.3** implemented with an **AVX2 path** (3 GB/s raw stream, ~10× portable); library + CLI pass 1336 + 69 checks. Next: faster Poly1305, cross-target builds, first PR.
+**Status:** Phase 2 in progress: spec **v0.3** implemented; AVX2 keystream 3.1 GB/s, AEAD 1.27 GB/s; library + CLI pass 1336 + 69 checks. Next: cross-target builds, first PR, Session 02 audit.
 **Branch:** `c-refactor` (PRs into `main`, see D-011)
 **Last updated:** 2026-11-27 (Session 02)
 **Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `2a837a4`)

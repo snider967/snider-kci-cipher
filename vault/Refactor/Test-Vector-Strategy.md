@@ -29,6 +29,10 @@ Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS
 - PBKDF2-HMAC-SHA256: RFC 7914 §11 #1 (c = 1) and #2 (c = 80 000), plus c = 2, 3, 5 and 4096, an empty password, a 100-byte password and a 97-byte output.
   `kci_kdf_password` at 600 000 iterations is checked, and so are refusals below 100 000 iterations or below a 16-byte salt.
 
+**Poly1305 64-bit limbs (Session 02):** both implementations pass every Poly1305/AEAD vector: the default build (44-bit limbs on this
+machine) and `-DKCI_NO_INT128` (26-bit limbs), plus ASan+UBSan. Mutation check on the 64-bit code: **7 of 8 mutants caught**. The
+survivor is again the top-limb overflow carry in the finaliser, which is unreachable in practice, as for the 32-bit code.
+
 **AVX2 path (Session 02):** **1336 library + 69 CLI checks**. The AVX2 kernel is compared directly against the portable `kci_block`
 for 24 keys (24 decks) at counters including 0xfffffff0 and 0xfffffff8. It is also compared through the stream API with odd lead-ins and lengths
 511–8192, which exercises the dispatch and the portable tail. The last 8 counters before the limit go through AVX2 and then the limit is enforced.

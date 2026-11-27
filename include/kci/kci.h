@@ -54,9 +54,13 @@ typedef struct {
     uint32_t used;                    /* bytes of buf already consumed (64 = empty) */
 } kci_stream;
 
-/* Poly1305 state (used inside kci_aead_ctx). Treat as opaque. */
+/* Poly1305 state (used inside kci_aead_ctx). Treat as opaque. The layout is the same for every build:
+ * the library uses p64 (44-bit limbs) where the compiler has 128-bit integers, otherwise p32 (26-bit limbs). */
 typedef struct {
-    uint32_t r[5], h[5], pad[4];
+    union {
+        struct { uint32_t r[5], h[5], pad[4]; } p32;
+        struct { uint64_t r[3], h[3], pad[2]; } p64;
+    } u;
     uint8_t  buf[16];
     size_t   left;
 } kci_poly1305_state;

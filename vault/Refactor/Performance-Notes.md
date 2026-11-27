@@ -62,8 +62,14 @@ It is selected at run time (`__builtin_cpu_supports("avx2")`) and `kci_impl()` r
 | CLI, 256 MiB file, enc / dec | 1.16 s / 1.16 s | **0.40 s / 0.41 s** | 2.9× (RSS 1.6 MB) |
 
 The raw stream matches the prototype (3 150 MB/s, [[KCI-Primitive-Design]] §11), so the real kernel kept the prototype's
-"key-selected loops cost nothing" result. **Next bottleneck: Poly1305.** Options: a 64-bit-limb (`__int128`) path for x86-64/ARM64
-(typically 2–3× faster) or an AVX2 Poly1305.
+"key-selected loops cost nothing" result.
+
+## Poly1305 with 64-bit limbs (Session 02)
+Where the compiler has `unsigned __int128` (x86-64, ARM64), Poly1305 uses 44/44/42-bit limbs; elsewhere it uses 26-bit limbs (`-DKCI_NO_INT128` forces those).
+- Poly1305 alone: 1 502 → **2 160 MB/s** (1.44×; the 2–3× estimate was optimistic on this CPU).
+- AEAD encrypt: 1 011 → **1 268 MB/s**. CLI, 256 MiB: **0.35 s** each way.
+- Reference point: OpenSSL's assembly ChaCha20-Poly1305 does 2 349 MB/s on this machine.
+- Next step if wanted: a vectorised AVX2 Poly1305 (4 blocks at a time, as OpenSSL does). It is the remaining AEAD bottleneck.
 
 ## Baseline numbers (Python)
 _Not measured yet._

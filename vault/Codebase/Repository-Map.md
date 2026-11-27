@@ -10,7 +10,7 @@ Back to [[00-Index]]
 | `src/core/kci_round.c` | loop tables, round function, block function |
 | `src/core/kci_deck.c` | key setup: deck shuffle + constant-time expansion |
 | `src/core/kci_stream.c` | raw counter-mode stream |
-| `src/core/kci_poly1305.c` | Poly1305, 26-bit limbs (internal API) |
+| `src/core/kci_poly1305.c` | Poly1305: 44-bit limbs with `__int128`, 26-bit limbs otherwise (internal API) |
 | `src/core/kci_aead.c` | AEAD encrypt/decrypt, constant-time compare |
 | `src/core/kci_sha256.c` | SHA-256, HMAC-SHA256, PBKDF2, `kci_kdf_password` |
 | `src/core/kci_internal.h` | internals shared with the tests |

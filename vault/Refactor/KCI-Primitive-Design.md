@@ -189,7 +189,7 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 - Deck expansion reads `ρ[s]` with a masked scan over all 8 rows (§4.2).
 - Variable rotations by a secret amount are constant-time on every supported target: x86 `rol r32, cl`/`shlx`/`shrx`/`vpsllvd`, ARM
   `ROR Rd, Rm` (Cortex-M0/M3/M4/A-class) and NEON `vshl`. **Not** on 8- and 16-bit MCUs without a barrel shifter, which are out of scope (D-010).
-- Poly1305 needs a constant-time 32×32→64-bit multiply. That holds on x86, ARMv7-A/ARMv8 and Cortex-M4/M7 (`UMULL` takes 1 cycle). It does
+- Poly1305 uses 64×64→128-bit multiplies on x86-64/ARM64 (constant-time there: `MUL`, `MUL`/`UMULH`). Elsewhere it needs a constant-time 32×32→64-bit multiply. That holds on x86, ARMv7-A/ARMv8 and Cortex-M4/M7 (`UMULL` takes 1 cycle). It does
   **not** hold on Cortex-M3, whose `UMULL`/`SMULL` take 3–5 cycles depending on the operands, and possibly not on Cortex-M0 when a library supplies the 64-bit multiply.
   If the M3/M0 targets become real, they need a multiply routine with a fixed cycle count.
 - The AVX2 path picks each round's byte-shuffle mask with compare-and-mask (no secret index), and broadcasts the shift counts.
