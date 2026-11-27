@@ -60,6 +60,10 @@ Not tested: the interactive password prompt (no terminal in the test run); the W
 (portable path, 1312 checks), plus gcc `-m32` (1334 checks, AVX2 path on i386) and the CMake build with ctest and the CLI tests. All 69 CLI checks pass
 everywhere. Not covered: Windows/MSVC, big-endian, MCUs.
 
+**Spec v0.4 (D-027, D-028):** all KATs regenerated from the Python reference with the new table (`tools/gen_vectors.py`); `kci selftest` uses the new
+key-`00..1f` block. **1336 library + 71 CLI checks**: the two new CLI checks are that new files carry `KCI\x02` and that a format-1 (v0.3) file is refused with a
+message naming v0.3. Passing locally at -O0, -O2, -O3 -march=native, ASan+UBSan, and `-DKCI_NO_SIMD -DKCI_NO_INT128` (1312 + 71).
+
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
    the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.

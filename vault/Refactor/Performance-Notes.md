@@ -71,5 +71,10 @@ Where the compiler has `unsigned __int128` (x86-64, ARM64), Poly1305 uses 44/44/
 - Reference point: OpenSSL's assembly ChaCha20-Poly1305 does 2 349 MB/s on this machine.
 - Next step if wanted: a vectorised AVX2 Poly1305 (4 blocks at a time, as OpenSSL does). It is the remaining AEAD bottleneck.
 
+## Spec v0.4 (D-027)
+Same machine, alternating runs of v0.4 and v0.3 builds: raw stream AVX2 2 673–2 722 MB/s (v0.3 2 728–2 738), portable 315–317 (v0.3 304–317),
+AEAD 1 227–1 233 (v0.3 1 237–1 250). Unchanged within noise, as expected: the d rotations are still byte shuffles. (The raw-stream figure is below the
+earlier 3 077 MB/s for both versions alike, which points at the machine state that day, not the table.)
+
 ## Baseline numbers (Python)
 _Not measured yet._

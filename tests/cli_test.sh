@@ -71,6 +71,10 @@ cp c.65537 t; printf 'x' >> t
 check "1 byte appended -> refused" '! dec_try -k key t && [ ! -e out ]'
 head -c 50 c.65537 > t
 check "shorter than header + tag -> refused" '! dec_try -k key t && [ ! -e out ] && no_tmp'
+cp c.17 t; python3 -I -c "import sys; b=bytearray(open('t','rb').read()); b[3]=1; open('t','wb').write(b)"
+rm -f out; msg=$("$KCI" dec -k key t out 2>&1); rc=$?
+check "v0.3 file (format 1) refused with a clear message" '[ $rc != 0 ] && [ ! -e out ] && echo "$msg" | grep -q "v0.3"'
+check "new files use format 2 (KCI-20 v0.4)" '[ "$(head -c 4 c.17 | od -An -tx1 | tr -d " ")" = 4b434902 ]'
 check "not a KCI file -> refused" '! dec_try -k key p.1048576 && [ ! -e out ]'
 python3 -I -c "import sys; b=bytearray(open('cp','rb').read()); b[8:12]=b'\xff\xff\xff\xff'; open('t','wb').write(b)"
 check "hostile iteration count refused quickly" '! dec_try --password-file pw t'

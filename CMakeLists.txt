@@ -1,7 +1,7 @@
-# KCI-20 cross-platform build. Untested so far (cmake is not installed on the dev machine yet); the Makefile is tested.
+# KCI-20 cross-platform build (tested in CI: Linux, macOS, ctest). The Makefile is the main build.
 # Copyright 2026 snider967. Licensed under the Apache License, Version 2.0.
 cmake_minimum_required(VERSION 3.16)
-project(kci VERSION 0.2.0 LANGUAGES C)
+project(kci VERSION 0.4.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

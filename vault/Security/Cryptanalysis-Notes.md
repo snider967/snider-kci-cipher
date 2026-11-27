@@ -91,3 +91,5 @@ Findings:
 - `tools/analysis/kci_rotsearch.c` searches for a table where every start is no weaker than ChaCha (details in [[KCI-Primitive-Design]] §13).
   Result: 6 loops retuned, loops 1 and 2 kept. At N = 2¹⁶: 2 of 512 starts above ChaCha, at 1.02× (noise level); worst 0.208. 4 rounds stay clean.
 - Raw output: `vault/Security/results/rotsearch-*.txt`.
+- **Adopted as v0.4 (D-027)** and re-measured on the implemented library: worst random deck at 3 rounds 0.201 (v0.3 0.654, ChaCha 0.197), all schedules clean at
+  4 rounds, deck statistics unchanged (uniform, related-key decks independent). Output: `vault/Security/results/v04-*.txt`.

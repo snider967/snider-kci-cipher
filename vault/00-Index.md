@@ -3,7 +3,7 @@
 > Knowledge base for the **Python → C refactor** of `snider-kci-cipher`.
 > Obsidian-compatible (double-bracket wikilinks). Keep this index current whenever a note is added/renamed.
 
-**Status:** Phase 2: spec **v0.3** implemented and merged to `main` (PR #1); CI on 5 platforms (PR #2, $0 hard rule D-025). AVX2 keystream 3.1 GB/s, AEAD 1.27 GB/s; 1336 library + 69 CLI checks. First security analysis done (clean after 4 rounds like ChaCha; Q20, Q21 open). Next: owner answers Q20/Q21, then trail bounds.
+**Status:** Phase 2: spec **v0.4** implemented (draft PR #4, implementation PR #5; v0.3 merged in PR #1); CI on 5 platforms (PR #2, $0 hard rule D-025). AVX2 keystream 3.1 GB/s, AEAD 1.27 GB/s; 1336 library + 69 CLI checks. Security analysis (PR #3) led to v0.4: every deck start now no weaker than ChaCha at 3 rounds. Next: SAT/MILP trail bounds (Q21 approved, D-026).
 **Branch:** work on topic branches, PRs into `main` (D-011). `c-refactor` (PR #1) and `ci-workflow` (PR #2) are merged.
 **Last updated:** 2026-11-27 (Session 02)
 **Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `f18a141`; the 2023 Python HEAD was `2a837a4`)
@@ -24,7 +24,7 @@
 - [[Cryptanalysis-Notes]] — security observations, **KCI-20 analysis results** (raw output in `vault/Security/results/`)
 
 ## Refactor (C), a redesign rather than a 1:1 port (D-007)
-- [[KCI-Primitive-Design]] — **KCI-20 spec v0.3 (accepted)**
+- [[KCI-Primitive-Design]] — **KCI-20 spec v0.4 (accepted)**
 - [[C-Architecture-Plan]] — proposed layout, API, build
 - [[Porting-Map]] — Python function → C function mapping & status
 - [[Test-Vector-Strategy]] — how we prove the C port matches

@@ -11,8 +11,9 @@
 #include "kci/kci.h"
 #include "platform.h"
 
-#define KCI_VERSION       "0.2.0"
+#define KCI_VERSION       "0.4.0"
 #define HDR_BYTES         40
+#define FORMAT_VERSION    2      /* "KCI\x02" = KCI-20 v0.4 (D-028); format 1 was v0.3 */
 #define MODE_AEAD         0
 #define MODE_RAW          1
 #define KDF_NONE          0
@@ -194,7 +195,7 @@ static int cmd_enc(int argc, char **argv)
     if (!o.key_file && o.iterations < KCI_KDF_MIN_ITERATIONS) return fail("iteration count below the minimum", NULL);
     if (o.raw) fprintf(stderr, "%s: warning: --raw gives no integrity check; changes to the file will go undetected\n", prog);
 
-    uint8_t hdr[HDR_BYTES] = { 'K', 'C', 'I', 1 }, key[KCI_KEY_BYTES], tag[KCI_TAG_BYTES];
+    uint8_t hdr[HDR_BYTES] = { 'K', 'C', 'I', FORMAT_VERSION }, key[KCI_KEY_BYTES], tag[KCI_TAG_BYTES];
     hdr[4] = o.raw ? MODE_RAW : MODE_AEAD;
     if (plat_random(hdr + 28, KCI_NONCE_BYTES)) return fail("OS random number generator failed", NULL);
 
@@ -255,8 +256,13 @@ static int cmd_dec(int argc, char **argv)
     uint8_t hdr[HDR_BYTES], key[KCI_KEY_BYTES];
     FILE *in = fopen(o.in, "rb");
     if (!in) return fail("cannot open input", o.in);
-    if (fread(hdr, 1, HDR_BYTES, in) != HDR_BYTES || memcmp(hdr, "KCI\x01", 4) != 0) {
-        fclose(in); return fail("not a KCI-20 v1 file", o.in);
+    if (fread(hdr, 1, HDR_BYTES, in) != HDR_BYTES || memcmp(hdr, "KCI", 3) != 0) {
+        fclose(in); return fail("not a KCI-20 file", o.in);
+    }
+    if (hdr[3] != FORMAT_VERSION) {
+        fclose(in);
+        return fail(hdr[3] == 1 ? "file was made by KCI-20 v0.3 (format 1), which this version cannot decrypt"
+                                : "unsupported KCI-20 file format version", o.in);
     }
     const int mode = hdr[4], kdf = hdr[5];
     const uint32_t iter = get32(hdr + 8);
@@ -361,11 +367,11 @@ static int cmd_keygen(int argc, char **argv)
 
 static int cmd_selftest(void)
 {
-    /* KCI-20 block, key 00..1f, nonce 000000090000004a00000000, counter 1. Same value from the C library and the
+    /* KCI-20 v0.4 block, key 00..1f, nonce 000000090000004a00000000, counter 1. Same value from the C library and the
      * independent Python reference (tools/kci_ref.py); see tests/kat_vectors.h. */
     static const char *expect =
-        "e5df9762136ae3da99d74fa612d12005e476386472aabb7abf420c81c929a406"
-        "592ff123cf33355adc2f057ea8c2c99853fe4a1a8d60bd850468a2782776ff5d";
+        "40b9da6580f402a175df9b60394cab46d57e073c98252ad92b2df9962a6ca139"
+        "a5ab360260272181fa5c66e6dad33d7457f2a7d3d9b5acce32bb89c80bf35d0d";
     uint8_t key[32], nonce[12] = { 0, 0, 0, 0x09, 0, 0, 0, 0x4a, 0, 0, 0, 0 }, blk[64], tag[16];
     char hex[129];
     int ok = 1;

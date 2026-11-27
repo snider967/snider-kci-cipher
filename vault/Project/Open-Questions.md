@@ -20,6 +20,7 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | Q17 | Authentication? | Optional: AEAD by default, raw stream mode for experiments | D-013 |
 | Q18 | v1/v2 as modes or merged? | Merged: v1 → password/KDF front end, v2 → stream core | D-014 |
 | Q19 | Domain-separate raw and AEAD modes? | Yes: raw mode gets its own constants (spec v0.3) | D-024 |
+| Q20 | Retune the loop rotation sets (spec v0.4)? | Yes, the drafted table and format 2 | D-027, D-028 |
 | Q21 | Install a SAT/MILP solver for trail bounds? | Yes, after the v0.4 draft; free PyPI package (D-025) | D-026 |
 
 ## Still open
@@ -30,5 +31,4 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |
 | Q12 | Arbitrary bytes/files instead of ASCII? | 🟡 | With the redesign: yes. |
-| Q20 | Retune the loop rotation sets (spec v0.4)? | 🟡 | Owner: yes, draft it. **Draft done:** [[KCI-Primitive-Design]] §13, sign-off items P7 (new table) and P8 (magic `KCI\x02`). Not implemented until signed off. |
 | Q14 | A "legacy" mode that reads old v1/v2 ciphertexts? | 🟡 | Default: no (no known stored ciphertexts). |
