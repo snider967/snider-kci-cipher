@@ -218,6 +218,43 @@ static void test_aead_kats(void) {
     }
 }
 
+/* streaming AEAD in uneven pieces must give the one-shot KATs */
+static void test_aead_streaming(void) {
+    static const size_t pieces[] = { 1, 15, 16, 17, 63, 64, 65, 7 };
+    uint8_t buf[256], tag[16];
+    for (size_t i = 0; i < sizeof kat_aeads / sizeof kat_aeads[0]; i++) {
+        const struct kat_aead *v = &kat_aeads[i];
+        const uint8_t *aad = v->aad_len ? kat_pool_rn + 256 - v->aad_len : NULL;
+        kci_key k; kci_aead_ctx c; size_t pos = 0, p = i;
+        kci_key_setup(&k, v->key);
+
+        memcpy(buf, kat_pool_rn, v->len);
+        kci_aead_init(&c, &k, v->nonce, aad, v->aad_len);
+        while (pos < v->len) {
+            size_t n = pieces[p++ % 8]; if (n > v->len - pos) n = v->len - pos;
+            CHECK(kci_aead_encrypt_update(&c, buf + pos, buf + pos, n) == KCI_OK, "stream encrypt update");
+            pos += n;
+        }
+        kci_aead_encrypt_final(&c, tag);
+        CHECK(memcmp(buf, kat_aead_cts + v->ct_off, v->len) == 0 && memcmp(tag, v->tag, 16) == 0,
+              "streaming AEAD encrypt %zu", i);
+
+        kci_aead_init(&c, &k, v->nonce, aad, v->aad_len);
+        for (pos = 0, p = i + 3; pos < v->len; ) {
+            size_t n = pieces[p++ % 8]; if (n > v->len - pos) n = v->len - pos;
+            CHECK(kci_aead_decrypt_update(&c, buf + pos, buf + pos, n) == KCI_OK, "stream decrypt update");
+            pos += n;
+        }
+        CHECK(kci_aead_decrypt_final(&c, v->tag) == KCI_OK && memcmp(buf, kat_pool_rn, v->len) == 0,
+              "streaming AEAD decrypt %zu", i);
+
+        uint8_t bad[16]; memcpy(bad, v->tag, 16); bad[0] ^= 1;
+        kci_aead_init(&c, &k, v->nonce, aad, v->aad_len);
+        kci_aead_decrypt_update(&c, buf, kat_aead_cts + v->ct_off, v->len);
+        CHECK(kci_aead_decrypt_final(&c, bad) == KCI_ERR_AUTH, "streaming AEAD bad tag %zu", i);
+    }
+}
+
 static void test_aead_tamper(void) {
     const struct kat_aead *v = &kat_aeads[sizeof kat_aeads / sizeof kat_aeads[0] - 1];   /* aad 17, len 200 */
     const uint8_t *ct = kat_aead_cts + v->ct_off;
@@ -359,6 +396,7 @@ int main(void) {
     test_poly1305_edges();
     test_aead_rfc8439();
     test_aead_kats();
+    test_aead_streaming();
     test_aead_tamper();
     test_aead_limit_and_ctcmp();
     test_sha256();

@@ -148,6 +148,11 @@ running the rounds backwards from known keystream (fixes the v2 inversion).
   stays safe up to about 2³² messages; password mode (§6) uses a fresh salt, so a fresh key (and a fresh deck), every time anyway.
 - ⚠️ Raw mode is **malleable**: flipping a ciphertext bit flips the same plaintext bit, and nothing detects it. The CLI
   only offers it behind an explicit `--raw` flag with a warning.
+- ⚠️ **Downgrade finding (Session 02, found by the CLI tests):** raw and AEAD files share the same ciphertext, so flipping the header's
+  mode byte from 0 to 1 turns an authenticated file into a "raw" one. A decrypter that trusts the mode byte then skips the tag and
+  accepts any further tampering. **Implemented mitigation (D-023):** `kci dec` refuses raw-mode files unless the user passes `--raw`.
+  **Proposed spec fix (Q19, owner decision):** domain-separate the two modes, e.g. raw mode uses its own stack constants, so a
+  downgraded file decrypts to garbage and raw ciphertext can never be passed off as AEAD ciphertext.
 
 ## 6. Password front end (v1 heritage, D-014)
 - `key = PBKDF2-HMAC-SHA256(password, salt, iterations, 32 bytes)`. The key then shuffles its deck (§4.2). This is where the v1 idea

@@ -18,7 +18,7 @@ Status: ⬜ not started · 🟨 in progress · ✅ done + tested · ⛔ dropped
 | v2 `key_gen_wrapper` / chain | `kci_stream.c` counter mode | ✅ |
 | v2 `enc`/`dec`/`xor_bytes` | `kci_stream_xor` | ✅ |
 | v1 Tk GUI | `gui/` (toolkit TBD) | ⬜ |
-| v2 demo + timeit | `kci selftest` / `kci bench` | ⬜ |
+| v2 demo + timeit | `kci selftest` / `kci bench` | ✅ |
 | SHA-256 (hashlib) | in-house SHA-256 + HMAC for PBKDF2 (Q6 default), `kci_sha256.c` | ✅ |
 | — | Poly1305 + AEAD (D-021): `kci_poly1305.c`, `kci_aead.c` | ✅ |
-| — | file format v1 + CLI (D-022) | ⬜ |
+| — | file format v1 + CLI (D-022, D-023): `cli/kci.c`, `cli/platform.c` | ✅ (Windows paths untested) |

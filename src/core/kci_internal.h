@@ -30,11 +30,7 @@ void kci_block_words(uint8_t out[KCI_BLOCK_BYTES], const kci_key *k, uint32_t ct
                      const uint32_t nonce[3], uint32_t scratch[32]);
 
 /* Poly1305 (RFC 8439 2.5), streaming. final() wipes the state. */
-typedef struct {
-    uint32_t r[5], h[5], pad[4];
-    uint8_t  buf[16];
-    size_t   left;
-} kci_poly1305_state;
+/* kci_poly1305_state is defined in kci/kci.h (it is part of kci_aead_ctx) */
 void kci_poly1305_init(kci_poly1305_state *st, const uint8_t key[32]);
 void kci_poly1305_update(kci_poly1305_state *st, const uint8_t *m, size_t bytes);
 void kci_poly1305_final(kci_poly1305_state *st, uint8_t tag[16]);

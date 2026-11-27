@@ -28,3 +28,4 @@ Format: `ID | date | decision | rationale | status (provisional/accepted/superse
 | D-020 | 2026-11-27 | KDF = PBKDF2-HMAC-SHA256, 16-byte salt, 600 000 iterations by default, minimum 100 000 on decrypt (P4, §6). | Owner signed off spec v0.2. | accepted |
 | D-021 | 2026-11-27 | AEAD = RFC 8439 composition with Poly1305 (default); raw mode = same ciphertext without tag, CLI flag `--raw` with a warning (P5, §5, §7). | Owner signed off spec v0.2. | accepted |
 | D-022 | 2026-11-27 | File format v1: 40-byte header (magic, mode, kdf id, iterations, salt, nonce) used as AAD (P6, §10). | Owner signed off spec v0.2. | accepted |
+| D-023 | 2026-11-27 | `kci dec` refuses raw-mode files unless `--raw` is given, so a flipped mode byte cannot silently turn off authentication. | Downgrade found by the CLI tests (spec §5). Implementation-level safety fix, made without asking; owner can revisit. Spec-level fix pending as Q19. | accepted (owner to confirm) |

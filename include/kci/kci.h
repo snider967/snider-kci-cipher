@@ -54,6 +54,20 @@ typedef struct {
     uint32_t used;                    /* bytes of buf already consumed (64 = empty) */
 } kci_stream;
 
+/* Poly1305 state (used inside kci_aead_ctx). Treat as opaque. */
+typedef struct {
+    uint32_t r[5], h[5], pad[4];
+    uint8_t  buf[16];
+    size_t   left;
+} kci_poly1305_state;
+
+/* Streaming AEAD state. Treat as opaque; it is wiped by the final call. */
+typedef struct {
+    kci_stream         stream;
+    kci_poly1305_state mac;
+    uint64_t           aad_len, len;
+} kci_aead_ctx;
+
 /* Key setup: shuffle the deck and expand it (spec 4.2). Constant-time in the key. */
 void kci_key_setup(kci_key *k, const uint8_t key[KCI_KEY_BYTES]);
 
@@ -82,6 +96,19 @@ int kci_aead_decrypt(uint8_t *pt, const uint8_t *ct, size_t len,
                      const uint8_t tag[KCI_TAG_BYTES],
                      const uint8_t *aad, size_t aad_len,
                      const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES]);
+
+/* Streaming AEAD, same output as the one-shot calls. The AAD is given up front.
+ *   encrypt: kci_aead_init, kci_aead_encrypt_update..., kci_aead_encrypt_final -> tag
+ *   decrypt: kci_aead_init, kci_aead_decrypt_update..., kci_aead_decrypt_final(tag)
+ * WARNING: streaming decrypt hands out plaintext BEFORE the tag is checked. The caller must hold it back
+ * (e.g. write a temp file and keep it only when kci_aead_decrypt_final returns KCI_OK).
+ * update calls return KCI_ERR_LIMIT, writing nothing, past KCI_MAX_MSG_BYTES in total. */
+void kci_aead_init(kci_aead_ctx *c, const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES],
+                   const uint8_t *aad, size_t aad_len);
+int  kci_aead_encrypt_update(kci_aead_ctx *c, uint8_t *ct, const uint8_t *pt, size_t len);
+void kci_aead_encrypt_final(kci_aead_ctx *c, uint8_t tag[KCI_TAG_BYTES]);
+int  kci_aead_decrypt_update(kci_aead_ctx *c, uint8_t *pt, const uint8_t *ct, size_t len);
+int  kci_aead_decrypt_final(kci_aead_ctx *c, const uint8_t tag[KCI_TAG_BYTES]);   /* KCI_OK or KCI_ERR_AUTH */
 
 /* Password -> 32-byte key (then call kci_key_setup, which shuffles the deck).
  * Returns KCI_ERR_PARAM if iterations < KCI_KDF_MIN_ITERATIONS or salt_len < KCI_KDF_MIN_SALT_BYTES. */

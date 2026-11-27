@@ -49,6 +49,7 @@ Same machine, `gcc -O2`, `build/libkci.a`, 64 MiB of `kci_stream_xor`, best of 5
 - `kci_kdf_password` at 600 000 iterations: **0.52 s** (portable SHA-256, HMAC key state precomputed once). OpenSSL via `hashlib` does
   the same work in 0.33 s with assembly. Every 1.6× the defender is slower than an attacker's optimised code is a 1.6× smaller effective cost.
   A SHA-256 fast path (SHA-NI / ARMv8 SHA2 instructions) is a later option.
+- CLI, 256 MiB file with a key file: enc 1.16 s, dec 1.16 s (~230 MB/s each), max RSS 1.6 MB whatever the file size (64 KiB chunks).
 
 ## Baseline numbers (Python)
 _Not measured yet._

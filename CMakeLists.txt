@@ -23,6 +23,13 @@ elseif(MSVC)
     target_compile_options(kci PRIVATE /W4)
 endif()
 
+add_executable(kci_cli cli/kci.c cli/platform.c)
+set_target_properties(kci_cli PROPERTIES OUTPUT_NAME kci)
+target_link_libraries(kci_cli PRIVATE kci)
+if(WIN32)
+    target_link_libraries(kci_cli PRIVATE bcrypt)
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(test_kci tests/test_kci.c)

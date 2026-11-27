@@ -14,4 +14,12 @@ make test        # library + known-answer tests
 make sanitize    # same tests under AddressSanitizer + UndefinedBehaviorSanitizer
 make vectors     # regenerate tests/kat_vectors.h from tools/kci_ref.py
 ```
+Use (key file or password; output is written only after the integrity check passes):
+```
+build/kci keygen my.key
+build/kci enc -k my.key secret.txt secret.kci
+build/kci dec -k my.key secret.kci secret.txt
+build/kci enc secret.txt secret.kci          # prompts for a password (PBKDF2, 600 000 iterations)
+build/kci selftest && build/kci bench
+```
 The original 2023 Python versions live in `legacy/python/`. Licensed under the Apache License 2.0 (`LICENSE`).

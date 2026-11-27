@@ -29,6 +29,18 @@ Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS
 - PBKDF2-HMAC-SHA256: RFC 7914 §11 #1 (c = 1) and #2 (c = 80 000), plus c = 2, 3, 5 and 4096, an empty password, a 100-byte password and a 97-byte output.
   `kci_kdf_password` at 600 000 iterations is checked, and so are refusals below 100 000 iterations or below a 16-byte salt.
 
+**CLI (Session 02, later):** `make test` runs the 1135 library checks **and** `tests/cli_test.sh` (66 checks), both also under ASan+UBSan.
+- Round trips at every chunk and tag-holdback boundary (0 … 1 MiB, around 65 536); output size = input + 56; random nonce per encryption.
+- Password mode at the minimum and default iterations, plus refusal below the minimum.
+- Wrong password or key → exit 2, with no output and no temp file left.
+- Tampering with the body, the tag, the nonce, the mode, the reserved bytes, the iterations or the salt is refused, as are truncation, an appended
+  byte, a short file, a non-KCI file and a hostile iteration count. Key-type mismatches are refused, and overwriting needs `-f`.
+- Key files and outputs are created 0600.
+- Raw mode: round trip, the warning, refusal without `--raw`, the **downgrade** being refused, and malleability shown.
+- **Cross-implementation:** C enc → Python dec and Python enc → C dec (key, password, raw) with `tools/kci_file.py`, built only on
+  `tools/kci_ref.py` and `hashlib`.
+Not tested: the interactive password prompt (no terminal in the test run); the Windows code paths.
+
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
    the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.

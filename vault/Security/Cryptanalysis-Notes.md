@@ -25,3 +25,9 @@ This is a hobby cipher and should not protect real data in its current form.
 - Use the KCI step only as a creative KDF component, then key a vetted stream cipher (ChaCha20) or a counter-mode
   construction with a nonce.
 - At minimum, add a nonce and counter mode so blocks can be computed in parallel and keystreams are never reused.
+
+## KCI-20 v0.2 (Session 02)
+- **Mode downgrade (file format v1):** raw and AEAD modes share their keystream and ciphertext (D-021), so flipping the header mode byte
+  turns an AEAD file into a raw file, which has no check. Mitigated in the CLI (D-023: raw files only with an explicit `--raw`). The proper
+  fix is mode domain separation (Q19). See [[KCI-Primitive-Design]] §5.
+- No cryptanalysis of the KCI-20 permutation yet; see the roadmap in [[KCI-Primitive-Design]] §12.

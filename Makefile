@@ -11,10 +11,12 @@ LIB_SRC := src/core/kci_round.c src/core/kci_deck.c src/core/kci_stream.c src/co
 LIB_OBJ := $(LIB_SRC:%.c=$(BUILD)/%.o)
 LIB     := $(BUILD)/libkci.a
 TEST    := $(BUILD)/test_kci
+CLI     := $(BUILD)/kci
+CLI_SRC := cli/kci.c cli/platform.c
 
-.PHONY: all test sanitize vectors clean
+.PHONY: all test cli-test sanitize vectors clean
 
-all: $(LIB) $(TEST)
+all: $(LIB) $(TEST) $(CLI)
 
 $(BUILD)/%.o: %.c include/kci/kci.h src/core/kci_internal.h
 	@mkdir -p $(dir $@)
@@ -26,8 +28,15 @@ $(LIB): $(LIB_OBJ)
 $(TEST): tests/test_kci.c tests/kat_vectors.h $(LIB)
 	$(CC) $(CPPFLAGS) $(WARN) $(CFLAGS) tests/test_kci.c $(LIB) -o $@
 
-test: $(TEST)
+$(CLI): $(CLI_SRC) cli/platform.h $(LIB)
+	$(CC) $(CPPFLAGS) $(WARN) $(CFLAGS) $(CLI_SRC) $(LIB) -o $@
+
+test: $(TEST) $(CLI)
 	./$(TEST)
+	sh tests/cli_test.sh ./$(CLI)
+
+cli-test: $(CLI)
+	sh tests/cli_test.sh ./$(CLI)
 
 # AddressSanitizer + UndefinedBehaviorSanitizer build in its own directory
 sanitize:

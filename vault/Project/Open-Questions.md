@@ -28,4 +28,5 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |
 | Q12 | Arbitrary bytes/files instead of ASCII? | 🟡 | With the redesign: yes. |
+| Q19 | Domain-separate raw and AEAD modes (e.g. different stack constants for raw), so raw ciphertext can never stand in for AEAD ciphertext? Changes the spec (v0.3) and makes raw and AEAD ciphertexts differ. | 🔴 | Recommended: yes. Found as a downgrade in Session 02 (spec §5); CLI mitigation D-023 is in place meanwhile. |
 | Q14 | A "legacy" mode that reads old v1/v2 ciphertexts? | 🟡 | Default: no (no known stored ciphertexts). |
