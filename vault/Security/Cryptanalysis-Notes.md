@@ -84,3 +84,10 @@ Findings:
 - SAT/MILP differential and linear **trail bounds** (§12 item 1 proper): needs a solver (none installed; a PyPI install is free under D-025 but needs the owner's OK).
 - Multi-bit input differences, linear correlations, PNB attack estimates for 6–7 rounds.
 - PractRand / TestU01 on the keystream (§12 item 4).
+
+### v0.4 draft: rotation search over all deck starts (Q20)
+- Key observation: the 3-round bias depends only on the first three loops, so the 512 starts (s0, s1, s2) cover all 8²⁰ decks for this statistic.
+- v0.3 at N = 2¹⁶: **58 of 512 starts** weaker than ChaCha (0.203); worst (3, 3, 7) = 0.683. Every loop is in at least one weak start.
+- `tools/analysis/kci_rotsearch.c` searches for a table where every start is no weaker than ChaCha (details in [[KCI-Primitive-Design]] §13).
+  Result: 6 loops retuned, loops 1 and 2 kept. At N = 2¹⁶: 2 of 512 starts above ChaCha, at 1.02× (noise level); worst 0.208. 4 rounds stay clean.
+- Raw output: `vault/Security/results/rotsearch-*.txt`.

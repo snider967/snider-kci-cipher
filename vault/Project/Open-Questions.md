@@ -20,6 +20,7 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | Q17 | Authentication? | Optional: AEAD by default, raw stream mode for experiments | D-013 |
 | Q18 | v1/v2 as modes or merged? | Merged: v1 → password/KDF front end, v2 → stream core | D-014 |
 | Q19 | Domain-separate raw and AEAD modes? | Yes: raw mode gets its own constants (spec v0.3) | D-024 |
+| Q21 | Install a SAT/MILP solver for trail bounds? | Yes, after the v0.4 draft; free PyPI package (D-025) | D-026 |
 
 ## Still open
 | # | Question | Status | Notes / default |
@@ -29,6 +30,5 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |
 | Q12 | Arbitrary bytes/files instead of ASCII? | 🟡 | With the redesign: yes. |
-| Q20 | Retune the weakest loop rotation sets (spec v0.4)? | 🔴 | Analysis: loops 0 and 4 have 3-round single-bit bias 0.55 / 0.36 vs ChaCha 0.20 (all clean at 4 rounds). Proposal: rerun the rotation search with "3-round bias ≤ ChaCha's" as the filter; keeps 8 key-selected loops. Needs new KATs. See [[Cryptanalysis-Notes]]. |
-| Q21 | Install a SAT/MILP solver (e.g. `pysat` or `z3-solver` from PyPI, free) for trail bounds? | 🔴 | Needed for spec §12 item 1 proper. |
+| Q20 | Retune the loop rotation sets (spec v0.4)? | 🟡 | Owner: yes, draft it. **Draft done:** [[KCI-Primitive-Design]] §13, sign-off items P7 (new table) and P8 (magic `KCI\x02`). Not implemented until signed off. |
 | Q14 | A "legacy" mode that reads old v1/v2 ciphertexts? | 🟡 | Default: no (no known stored ciphertexts). |

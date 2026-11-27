@@ -47,9 +47,12 @@ sanitize:
 # OpenMP is optional: without it the tools run single-threaded.
 OMP ?= -fopenmp
 ANWARN := -std=c11 -Wall -Wextra -Wpedantic   # no -Wconversion: these are statistics tools full of doubles
-analysis: $(BUILD)/kci_diffbias $(BUILD)/kci_deckstats
+analysis: $(BUILD)/kci_diffbias $(BUILD)/kci_deckstats $(BUILD)/kci_rotsearch
 
-$(BUILD)/kci_diffbias: tools/analysis/kci_diffbias.c $(LIB)
+$(BUILD)/kci_diffbias: tools/analysis/kci_diffbias.c tools/analysis/analysis_common.h $(LIB)
+	$(CC) $(CPPFLAGS) $(ANWARN) $(CFLAGS) $(OMP) $< $(LIB) -lm -o $@
+
+$(BUILD)/kci_rotsearch: tools/analysis/kci_rotsearch.c tools/analysis/analysis_common.h $(LIB)
 	$(CC) $(CPPFLAGS) $(ANWARN) $(CFLAGS) $(OMP) $< $(LIB) -lm -o $@
 
 $(BUILD)/kci_deckstats: tools/analysis/kci_deckstats.c $(LIB)
