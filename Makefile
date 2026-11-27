@@ -14,7 +14,7 @@ TEST    := $(BUILD)/test_kci
 CLI     := $(BUILD)/kci
 CLI_SRC := cli/kci.c cli/platform.c
 
-.PHONY: all test cli-test sanitize vectors clean
+.PHONY: all test cli-test sanitize vectors analysis clean
 
 all: $(LIB) $(TEST) $(CLI)
 
@@ -42,6 +42,18 @@ cli-test: $(CLI)
 sanitize:
 	$(MAKE) BUILD=build-san CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" \
 	        LDFLAGS="-fsanitize=address,undefined" test
+
+# Security-analysis tools (spec section 12; results in vault/Security/Cryptanalysis-Notes.md). Not part of `make test`.
+# OpenMP is optional: without it the tools run single-threaded.
+OMP ?= -fopenmp
+ANWARN := -std=c11 -Wall -Wextra -Wpedantic   # no -Wconversion: these are statistics tools full of doubles
+analysis: $(BUILD)/kci_diffbias $(BUILD)/kci_deckstats
+
+$(BUILD)/kci_diffbias: tools/analysis/kci_diffbias.c $(LIB)
+	$(CC) $(CPPFLAGS) $(ANWARN) $(CFLAGS) $(OMP) $< $(LIB) -lm -o $@
+
+$(BUILD)/kci_deckstats: tools/analysis/kci_deckstats.c $(LIB)
+	$(CC) $(CPPFLAGS) $(ANWARN) $(CFLAGS) $< $(LIB) -lm -o $@
 
 # Regenerate tests/kat_vectors.h from the Python reference sketch
 vectors:

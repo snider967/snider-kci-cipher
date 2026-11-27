@@ -24,6 +24,7 @@ Back to [[00-Index]]
 | `bench/prototype/` | Session 02 prototype benchmarks (fixed vs key-selected rotations) |
 | `Makefile`, `CMakeLists.txt` | build (CMake is tested in CI only; no cmake on the dev machine) |
 | `.github/workflows/ci.yml` | CI: Linux x86-64 gcc/clang, Linux ARM64, macOS ARM64, gcc -m32, CMake (D-025) |
+| `tools/analysis/kci_diffbias.c`, `tools/analysis/kci_deckstats.c` | security analysis tools (`make analysis`); results in `vault/Security/results/`, write-up in [[Cryptanalysis-Notes]] |
 | `tools/check_ci_cost.py` | enforces the $0 rule on every workflow; first CI job |
 | `LICENSE` | Apache-2.0 (D-015); covers the whole repo, including the legacy Python |
 

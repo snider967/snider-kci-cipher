@@ -274,8 +274,11 @@ confirms the prototype. See [[Performance-Notes]].
 **Not verified:** SSE2/SSSE3/NEON speed; statistical batteries; timing tests.
 
 ## 12. Improvement roadmap (carry forward, don't abandon)
+Status 2026-11-27: first empirical pass done for items 1–3 (single-bit differentials, deck and related-key statistics), see [[Cryptanalysis-Notes]].
+Result: every loop and deck is clean after 4 rounds, like ChaCha; loops 0 and 4 have the weakest 3-round bias (Q20); no weak decks or related-key structure found.
 1. **Differential and linear trail bounds** for each of the 8 rotation sets, and for the worst decks (one loop repeated 20 times,
    alternating pairs). Use a SAT/MILP model like those published for ChaCha. Replace any set that comes out weak, or raise the round count.
+   _Empirical part done; SAT/MILP bounds still open (no solver installed)._
 2. Look for **weak decks**: schedules whose diffusion is clearly worse than average. If any exist, constrain the deck derivation
    (for example, forbid the same loop on 4 rounds in a row).
 3. **Related-key behaviour of the deck:** do nearby keys give nearby decks? (The setup block should make decks look independent; test it.)
