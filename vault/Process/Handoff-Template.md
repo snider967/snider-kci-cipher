@@ -1,0 +1,19 @@
+# Handoff Template
+
+Back to [[Workflow]]
+
+```markdown
+### Handoff — YYYY-MM-DD HH:MM
+**Phase:** …
+**Repo state:** branch …, HEAD …, uncommitted: yes/no (what)
+**Done since last handoff:**
+- …
+**Verified (commands run):**
+- …
+**Not verified / known gaps:**
+- …
+**Next steps (ordered):**
+1. …
+**Blockers / waiting on owner:**
+- Q# …
+```
