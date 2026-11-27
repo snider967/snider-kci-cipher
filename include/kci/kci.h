@@ -21,10 +21,14 @@ extern "C" {
 #define KCI_BLOCK_BYTES 64
 #define KCI_ROUNDS      20
 #define KCI_LOOPS       8
+#define KCI_TAG_BYTES   16
+/* Longest message per (key, nonce): counters 1 .. 2^32 - 1, 64 bytes each (counter 0 is the MAC key block). */
+#define KCI_MAX_MSG_BYTES ((((uint64_t)1 << 32) - 1) * 64u)
 
 /* Return codes */
 #define KCI_OK          0
 #define KCI_ERR_LIMIT  (-1)   /* request would run the 32-bit block counter past 2^32 - 1 */
+#define KCI_ERR_AUTH   (-2)   /* AEAD tag mismatch: ciphertext, AAD, nonce or key is wrong */
 
 /* Expanded key: key words + the expanded deck (spec section 4.2). Treat as opaque; wipe with kci_key_wipe(). */
 typedef struct {
@@ -56,6 +60,24 @@ void kci_stream_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NO
 /* out = in XOR keystream. Encrypt == decrypt. in and out may be the same buffer.
  * Returns KCI_ERR_LIMIT, writing nothing, if len exceeds the keystream left before the counter limit. */
 int kci_stream_xor(kci_stream *s, uint8_t *out, const uint8_t *in, size_t len);
+
+/* AEAD mode (spec 7, the default): RFC 8439 composition with KCI-20 and Poly1305.
+ * Never reuse a (key, nonce) pair. ct may equal pt (in place). aad may be NULL when aad_len is 0.
+ * Returns KCI_ERR_LIMIT (writing nothing) if len > KCI_MAX_MSG_BYTES. */
+int kci_aead_encrypt(uint8_t *ct, uint8_t tag[KCI_TAG_BYTES],
+                     const uint8_t *pt, size_t len,
+                     const uint8_t *aad, size_t aad_len,
+                     const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES]);
+
+/* Verifies the tag first (constant-time compare), and only then decrypts.
+ * Returns KCI_ERR_AUTH, writing nothing to pt, if the tag does not match. pt may equal ct (in place). */
+int kci_aead_decrypt(uint8_t *pt, const uint8_t *ct, size_t len,
+                     const uint8_t tag[KCI_TAG_BYTES],
+                     const uint8_t *aad, size_t aad_len,
+                     const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES]);
+
+/* Constant-time comparison: 0 if equal, -1 otherwise. */
+int kci_ct_memcmp(const void *a, const void *b, size_t n);
 
 /* Secure wipe (not removed by the optimiser). */
 void kci_wipe(void *p, size_t n);

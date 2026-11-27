@@ -62,6 +62,31 @@ class Key:
     def block(self, ctr, nonce):
         return struct.pack('<16I', *core(STACK_CONST, self.key, ctr, nonce, self.rots, self.rcs))
 
+# ---------- Poly1305 and AEAD (spec 7: RFC 8439 composition with KCI-20) ----------
+P1305 = (1 << 130) - 5
+
+def poly1305(key, msg):
+    """Big-integer Poly1305 (RFC 8439 2.5): independent of the C 26-bit-limb version."""
+    r = int.from_bytes(key[:16], 'little') & 0x0ffffffc0ffffffc0ffffffc0fffffff
+    s = int.from_bytes(key[16:32], 'little')
+    acc = 0
+    for i in range(0, len(msg), 16):
+        acc = (acc + int.from_bytes(msg[i:i + 16] + b'\x01', 'little')) * r % P1305
+    return ((acc + s) % (1 << 128)).to_bytes(16, 'little')
+
+def _pad16(b):
+    return bytes(-len(b) % 16)
+
+def aead_mac_data(aad, ct):
+    return aad + _pad16(aad) + ct + _pad16(ct) + struct.pack('<QQ', len(aad), len(ct))
+
+def aead_encrypt(block_fn, nonce, pt, aad):
+    """block_fn(ctr, nonce) -> 64-byte block. Returns (ct, tag)."""
+    otk = block_fn(0, nonce)[:32]
+    ks = b''.join(block_fn(c, nonce) for c in range(1, 1 + (len(pt) + 63) // 64))
+    ct = bytes(a ^ b for a, b in zip(pt, ks))
+    return ct, poly1305(otk, aead_mac_data(aad, ct))
+
 # ---------- rotation-set search (reproducible, seeded by the loop table) ----------
 def _aval(rots, samples, seed=7):
     rnd = random.Random(seed); tot = n = 0; mn = 999

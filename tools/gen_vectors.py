@@ -90,6 +90,86 @@ def main():
     w(f'/* ChaCha-mode keystream, key kat_stream_key, nonce kat_stream_nonce, ctr 1: {checked} */')
     w(f'static const uint8_t kat_chacha_stream[{n}] = {carr(ks)};\n')
 
+    # 5. Poly1305: RFC 8439 2.5.2 + edge cases, each checked against OpenSSL's POLY1305 MAC when available
+    def ossl_poly(key, msg):
+        if not shutil.which('openssl'):
+            return None
+        o = subprocess.run(['openssl', 'mac', '-macopt', 'hexkey:' + key.hex(), 'POLY1305'],
+                           input=msg, capture_output=True, check=True).stdout
+        return bytes.fromhex(o.decode().strip())
+    prnd = random.Random(1305)
+    pool_ff = b'\xff' * 256
+    pool_rn = bytes(prnd.getrandbits(8) for _ in range(256))
+    pkeys = [bytes.fromhex('85d6be7857556d337f4452fe42d506a80103808afb0db2fd4abff6af4149f51b'),
+             b'\xff' * 32,                                   # r clamps to its maximum, s all ones
+             bytes(16) + bytes(prnd.getrandbits(8) for _ in range(16)),   # r = 0: tag = s
+             b'\xff' * 16 + bytes(16),                       # max r, s = 0
+             bytes(prnd.getrandbits(8) for _ in range(32))]
+    w(f'static const uint8_t kat_pool_ff[256] = {carr(pool_ff)};')
+    w(f'static const uint8_t kat_pool_rn[256] = {carr(pool_rn)};')
+    w('static const uint8_t kat_poly_keys[][32] = {' + ','.join(carr(k_) for k_ in pkeys) + '};')
+    w('struct kat_poly { uint8_t key; uint8_t pool; uint16_t len; uint8_t tag[16]; };  /* pool 0 = ff, 1 = random */')
+    w('static const struct kat_poly kat_polys[] = {')
+    n_ossl = 0
+    for ki, pk in enumerate(pkeys):
+        for li, ln in enumerate([0, 1, 15, 16, 17, 31, 32, 33, 63, 64, 65, 100, 255, 256]):
+            for pool_i, pool in enumerate((pool_ff, pool_rn)):
+                msg = pool[:ln]; tag = K.poly1305(pk, msg)
+                o = ossl_poly(pk, msg)
+                if o is not None:
+                    assert o == tag, f'Poly1305 disagrees with OpenSSL: key {ki} len {ln} pool {pool_i}'; n_ossl += 1
+                w(f'  {{ {ki}, {pool_i}, {ln}, {carr(tag)} }},')
+    w('};')
+    # 5b. final-reduction edge cases: r = 1, three full blocks summing to p + j (j = -1 .. 4), so the
+    #     accumulator ends exactly at or just above p = 2^130 - 5 and the h >= p branch-free select is exercised
+    special = []
+    sk = b'\x01' + bytes(15) + bytes(prnd.getrandbits(8) for _ in range(16))
+    for j in range(-1, 5):
+        x1 = (1 << 128) - 5 + j                    # 3 * 2^128 (block markers) + x1 = 2^130 - 5 + j
+        msg = x1.to_bytes(16, 'little') + bytes(32)
+        tag = K.poly1305(sk, msg)
+        o = ossl_poly(sk, msg)
+        if o is not None:
+            assert o == tag, f'Poly1305 edge case j={j} disagrees with OpenSSL'; n_ossl += 1
+        special.append((msg, tag))
+    w(f'static const uint8_t kat_poly_edge_key[32] = {carr(sk)};')
+    w('/* message = 3 blocks with sum p + j, j = -1 .. 4 */')
+    w('static const uint8_t kat_poly_edge[6][2][48] = {' + ','.join('{' + carr(m) + ',' + carr(t + bytes(32)) + '}' for m, t in special) + '};')
+    rfc_msg = b'Cryptographic Forum Research Group'
+    assert K.poly1305(pkeys[0], rfc_msg).hex() == 'a8061dc1305136c6c22b8baf0c0127a9', 'RFC 8439 2.5.2 mismatch'
+    w(f'static const uint8_t kat_poly_rfc_msg[{len(rfc_msg)}] = {carr(rfc_msg)};')
+    w(f'static const uint8_t kat_poly_rfc_tag[16] = {carr(K.poly1305(pkeys[0], rfc_msg))}; /* RFC 8439 2.5.2 */')
+    w(f'/* Poly1305 vectors checked against OpenSSL: {n_ossl} */\n')
+
+    # 6. AEAD in ChaCha mode = RFC 8439 2.8.2 (kernel + composition cross-check)
+    a_pt = b"Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
+    a_key = bytes(range(0x80, 0xa0)); a_nonce = bytes.fromhex('070000004041424344454647')
+    a_aad = bytes.fromhex('50515253c0c1c2c3c4c5c6c7')
+    a_ct, a_tag = K.aead_encrypt(lambda c, nn: chacha_block(a_key, c, nn), a_nonce, a_pt, a_aad)
+    assert a_tag.hex() == '1ae10b594f09e26a7e902ecbd0600691', 'RFC 8439 2.8.2 tag mismatch'
+    w(f'#define KAT_RFC_AEAD_LEN {len(a_pt)}')
+    w(f'static const uint8_t kat_rfc_aead_pt[{len(a_pt)}] = {carr(a_pt)};')
+    w(f'static const uint8_t kat_rfc_aead_key[32] = {carr(a_key)};')
+    w(f'static const uint8_t kat_rfc_aead_nonce[12] = {carr(a_nonce)};')
+    w(f'static const uint8_t kat_rfc_aead_aad[12] = {carr(a_aad)};')
+    w(f'static const uint8_t kat_rfc_aead_ct[{len(a_ct)}] = {carr(a_ct)};')
+    w(f'static const uint8_t kat_rfc_aead_tag[16] = {carr(a_tag)}; /* RFC 8439 2.8.2 */\n')
+
+    # 7. KCI-20 AEAD vectors (pt and aad taken from the random pool)
+    arnd = random.Random(8439)
+    w('struct kat_aead { uint8_t key[32]; uint8_t nonce[12]; uint16_t aad_len; uint16_t len; uint16_t ct_off; uint8_t tag[16]; };')
+    cts = b''; rows = []
+    for aad_len in (0, 12, 17):
+        for ln in (0, 1, 63, 64, 65, 200):
+            key_ = bytes(arnd.getrandbits(8) for _ in range(32)); nonce_ = bytes(arnd.getrandbits(8) for _ in range(12))
+            kk = K.Key(key_)
+            ct_, tag_ = K.aead_encrypt(kk.block, nonce_, pool_rn[:ln], pool_rn[256 - aad_len:])
+            rows.append(f'  {{ {carr(key_)}, {carr(nonce_)}, {aad_len}, {ln}, {len(cts)}, {carr(tag_)} }},')
+            cts += ct_
+    w('/* plaintext = kat_pool_rn[0..len), aad = kat_pool_rn[256 - aad_len .. 256) */')
+    w('static const struct kat_aead kat_aeads[] = {'); [w(r) for r in rows]; w('};')
+    w(f'static const uint8_t kat_aead_cts[{max(len(cts),1)}] = {carr(cts or bytes(1))};\n')
+
     w('#endif')
     with open(OUT, 'w') as f:
         f.write('\n'.join(L) + '\n')

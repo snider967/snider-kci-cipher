@@ -175,6 +175,9 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 - Deck expansion reads `ρ[s]` with a masked scan over all 8 rows (§4.2).
 - Variable rotations by a secret amount are constant-time on every supported target: x86 `rol r32, cl`/`shlx`/`shrx`/`vpsllvd`, ARM
   `ROR Rd, Rm` (Cortex-M0/M3/M4/A-class) and NEON `vshl`. **Not** on 8- and 16-bit MCUs without a barrel shifter, which are out of scope (D-010).
+- Poly1305 needs a constant-time 32×32→64-bit multiply. That holds on x86, ARMv7-A/ARMv8 and Cortex-M4/M7 (`UMULL` takes 1 cycle). It does
+  **not** hold on Cortex-M3, whose `UMULL`/`SMULL` take 3–5 cycles depending on the operands, and possibly not on Cortex-M0 when a library supplies the 64-bit multiply.
+  If the M3/M0 targets become real, they need a multiply routine with a fixed cycle count.
 - Secrets are wiped with a non-elidable `kci_wipe` before return. The dudect-style timing test covers key setup, `block`, `kci_xor`
   and the tag check, and it must include keys with very different decks.
 

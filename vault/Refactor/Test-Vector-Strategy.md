@@ -12,6 +12,17 @@ stream KAT with chunked in-place decryption, the counter limit, and the wipe.
 Vectors come from the independent Python sketch, so they are **cross-implementation** checks, not self-generated.
 Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS, dudect timing.
 
+**Poly1305 + AEAD (Session 02, later):** `make test` = **687 checks**.
+- Poly1305: RFC 8439 §2.5.2, plus 140 edge vectors (5 keys including max-clamped r and s = all ones, lengths 0–256 around every
+  16-byte boundary, all-0xff and random messages), one-shot and streamed in uneven pieces. Plus 6 **final-reduction** vectors
+  (r = 1, three blocks summing to p − 1 … p + 4). All 146 agree with OpenSSL's `POLY1305` MAC.
+- AEAD: ChaCha mode reproduces **RFC 8439 §2.8.2** (ciphertext and tag). There are 18 KCI-20 AEAD KATs (AAD 0/12/17 bytes × lengths
+  0/1/63/64/65/200) with in-place encrypt and decrypt. Tampering with the ciphertext, tag, AAD or nonce, truncating, or using the wrong key
+  all return `KCI_ERR_AUTH` and write nothing. The length limit and `kci_ct_memcmp` are tested too.
+- **Mutation check** on the Poly1305 finaliser: 4 of 5 hand-made mutants are caught. Before the final-reduction vectors, the `h0 + 5`
+  mutant survived. The survivor is the top-limb overflow carry in `final()`, which needs the accumulator near 2¹³¹ (r = 1) or
+  odds of about 2⁻⁷⁸ (general r). It is believed unreachable in practice and kept because it is part of the standard algorithm.
+
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
    the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.

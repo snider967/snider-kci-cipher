@@ -20,5 +20,5 @@ Status: ⬜ not started · 🟨 in progress · ✅ done + tested · ⛔ dropped
 | v1 Tk GUI | `gui/` (toolkit TBD) | ⬜ |
 | v2 demo + timeit | `kci selftest` / `kci bench` | ⬜ |
 | SHA-256 (hashlib) | in-house SHA-256 for PBKDF2 (Q6 default) | ⬜ |
-| — | Poly1305 + AEAD (D-021) | ⬜ |
+| — | Poly1305 + AEAD (D-021): `kci_poly1305.c`, `kci_aead.c` | ✅ |
 | — | file format v1 + CLI (D-022) | ⬜ |

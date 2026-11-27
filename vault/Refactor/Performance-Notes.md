@@ -45,6 +45,7 @@ Same machine, `gcc -O2`, `build/libkci.a`, 64 MiB of `kci_stream_xor`, best of 5
 - How it got there: wiping temporaries once per call instead of once per block (204 → 236 MB/s); unrolling 4 rounds so the
   round-constant target and the column/diagonal choice are fixed in the code (core 295 → 381); a full-block XOR fast path (stream 286 → 316).
   Interleaving the quarter-rounds step by step alone did not help in C.
+- AEAD encrypt (KCI-20 + Poly1305, 32 MiB, best of 5): **~256 MB/s** portable.
 
 ## Baseline numbers (Python)
 _Not measured yet._

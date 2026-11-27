@@ -154,6 +154,130 @@ static void test_counter_limit(void) {
     CHECK(kci_stream_xor(&s, ks, ks, 64) == KCI_OK && memcmp(ks, blk, 64) == 0, "last block = counter 0xffffffff");
 }
 
+static void test_poly1305(void) {
+    uint8_t tag[16];
+    kci_poly1305(tag, kat_poly_rfc_msg, sizeof kat_poly_rfc_msg, kat_poly_keys[0]);
+    CHECK(memcmp(tag, kat_poly_rfc_tag, 16) == 0, "Poly1305 RFC 8439 2.5.2");
+
+    static const size_t splits[] = { 1, 7, 16, 9, 33 };
+    for (size_t i = 0; i < sizeof kat_polys / sizeof kat_polys[0]; i++) {
+        const struct kat_poly *v = &kat_polys[i];
+        const uint8_t *msg = v->pool ? kat_pool_rn : kat_pool_ff;
+        kci_poly1305(tag, msg, v->len, kat_poly_keys[v->key]);
+        CHECK(memcmp(tag, v->tag, 16) == 0, "Poly1305 one-shot: key %u len %u pool %u", v->key, v->len, v->pool);
+
+        /* same message fed in uneven pieces */
+        kci_poly1305_state st; size_t pos = 0, c = 0;
+        kci_poly1305_init(&st, kat_poly_keys[v->key]);
+        while (pos < v->len) {
+            size_t n = splits[c++ % (sizeof splits / sizeof splits[0])];
+            if (n > v->len - pos) n = v->len - pos;
+            kci_poly1305_update(&st, msg + pos, n);
+            pos += n;
+        }
+        kci_poly1305_final(&st, tag);
+        CHECK(memcmp(tag, v->tag, 16) == 0, "Poly1305 streamed: key %u len %u pool %u", v->key, v->len, v->pool);
+    }
+}
+
+static void test_poly1305_edges(void) {
+    uint8_t tag[16];
+    for (int j = 0; j < 6; j++) {
+        kci_poly1305(tag, kat_poly_edge[j][0], 48, kat_poly_edge_key);
+        CHECK(memcmp(tag, kat_poly_edge[j][1], 16) == 0, "Poly1305 final reduction, h = p + %d", j - 1);
+    }
+}
+
+static void test_aead_rfc8439(void) {
+    kci_key k; uint8_t ct[KAT_RFC_AEAD_LEN], pt[KAT_RFC_AEAD_LEN], tag[16];
+    chacha_mode_key(&k, kat_rfc_aead_key);
+    CHECK(kci_aead_encrypt(ct, tag, kat_rfc_aead_pt, sizeof ct, kat_rfc_aead_aad, 12, &k, kat_rfc_aead_nonce) == KCI_OK,
+          "RFC AEAD encrypt");
+    CHECK(memcmp(ct, kat_rfc_aead_ct, sizeof ct) == 0, "ChaCha-mode AEAD ciphertext != RFC 8439 2.8.2");
+    CHECK(memcmp(tag, kat_rfc_aead_tag, 16) == 0, "ChaCha-mode AEAD tag != RFC 8439 2.8.2");
+    CHECK(kci_aead_decrypt(pt, ct, sizeof ct, tag, kat_rfc_aead_aad, 12, &k, kat_rfc_aead_nonce) == KCI_OK &&
+          memcmp(pt, kat_rfc_aead_pt, sizeof pt) == 0, "RFC AEAD decrypt");
+}
+
+static void test_aead_kats(void) {
+    uint8_t buf[256], tag[16];
+    for (size_t i = 0; i < sizeof kat_aeads / sizeof kat_aeads[0]; i++) {
+        const struct kat_aead *v = &kat_aeads[i];
+        const uint8_t *aad = v->aad_len ? kat_pool_rn + 256 - v->aad_len : NULL;
+        kci_key k;
+        kci_key_setup(&k, v->key);
+
+        memcpy(buf, kat_pool_rn, v->len);   /* encrypt in place */
+        CHECK(kci_aead_encrypt(buf, tag, buf, v->len, aad, v->aad_len, &k, v->nonce) == KCI_OK, "AEAD encrypt %zu", i);
+        CHECK(memcmp(buf, kat_aead_cts + v->ct_off, v->len) == 0, "AEAD ciphertext %zu (aad %u, len %u)", i, v->aad_len, v->len);
+        CHECK(memcmp(tag, v->tag, 16) == 0, "AEAD tag %zu (aad %u, len %u)", i, v->aad_len, v->len);
+
+        CHECK(kci_aead_decrypt(buf, buf, v->len, v->tag, aad, v->aad_len, &k, v->nonce) == KCI_OK &&
+              memcmp(buf, kat_pool_rn, v->len) == 0, "AEAD decrypt in place %zu", i);
+        kci_key_wipe(&k);
+    }
+}
+
+static void test_aead_tamper(void) {
+    const struct kat_aead *v = &kat_aeads[sizeof kat_aeads / sizeof kat_aeads[0] - 1];   /* aad 17, len 200 */
+    const uint8_t *ct = kat_aead_cts + v->ct_off;
+    uint8_t c2[256], tag[16], aad[32], nonce[12], out[256];
+    kci_key k;
+    kci_key_setup(&k, v->key);
+
+#define EXPECT_AUTH_FAIL(what, CT, TAG, AAD, NONCE)                                                  \
+    do {                                                                                          \
+        memset(out, 0xa5, sizeof out);                                                            \
+        int rc_ = kci_aead_decrypt(out, CT, v->len, TAG, AAD, v->aad_len, &k, NONCE);             \
+        int untouched_ = 1;                                                                       \
+        for (size_t j = 0; j < sizeof out; j++) untouched_ &= (out[j] == 0xa5);                   \
+        CHECK(rc_ == KCI_ERR_AUTH && untouched_, "tampered %s must fail and write nothing", what); \
+    } while (0)
+
+    memcpy(aad, kat_pool_rn + 256 - v->aad_len, v->aad_len);
+    memcpy(nonce, v->nonce, 12);
+    memcpy(tag, v->tag, 16);
+    for (size_t pos = 0; pos < v->len; pos += 37) {
+        memcpy(c2, ct, v->len); c2[pos] ^= 0x01;
+        EXPECT_AUTH_FAIL("ciphertext", c2, tag, aad, nonce);
+    }
+    for (int b = 0; b < 16; b++) {
+        memcpy(tag, v->tag, 16); tag[b] ^= 0x80;
+        EXPECT_AUTH_FAIL("tag", ct, tag, aad, nonce);
+    }
+    memcpy(tag, v->tag, 16);
+    aad[v->aad_len - 1] ^= 0x01;
+    EXPECT_AUTH_FAIL("aad", ct, tag, aad, nonce);
+    aad[v->aad_len - 1] ^= 0x01;
+    nonce[11] ^= 0x01;
+    EXPECT_AUTH_FAIL("nonce", ct, tag, aad, nonce);
+    nonce[11] ^= 0x01;
+    /* truncated message (length is authenticated) */
+    memset(out, 0xa5, sizeof out);
+    CHECK(kci_aead_decrypt(out, ct, v->len - 1, tag, aad, v->aad_len, &k, nonce) == KCI_ERR_AUTH, "truncated must fail");
+    /* wrong key */
+    kci_key k2; uint8_t key2[32]; memcpy(key2, v->key, 32); key2[31] ^= 1;
+    kci_key_setup(&k2, key2);
+    CHECK(kci_aead_decrypt(out, ct, v->len, tag, aad, v->aad_len, &k2, nonce) == KCI_ERR_AUTH, "wrong key must fail");
+    /* and the untampered inputs still verify */
+    CHECK(kci_aead_decrypt(out, ct, v->len, tag, aad, v->aad_len, &k, nonce) == KCI_OK &&
+          memcmp(out, kat_pool_rn, v->len) == 0, "untampered still verifies");
+#undef EXPECT_AUTH_FAIL
+}
+
+static void test_aead_limit_and_ctcmp(void) {
+    kci_key k; uint8_t tag[16] = {0}, b[1] = {0};
+    kci_key_setup(&k, kat_stream_key);
+    if ((uint64_t)SIZE_MAX > KCI_MAX_MSG_BYTES) {   /* 64-bit hosts: the limit is reachable as a size_t */
+        CHECK(kci_aead_encrypt(b, tag, b, (size_t)KCI_MAX_MSG_BYTES + 1, NULL, 0, &k, kat_stream_nonce) == KCI_ERR_LIMIT,
+              "encrypt over the length limit");
+        CHECK(kci_aead_decrypt(b, b, (size_t)KCI_MAX_MSG_BYTES + 1, tag, NULL, 0, &k, kat_stream_nonce) == KCI_ERR_LIMIT,
+              "decrypt over the length limit");
+    }
+    static const uint8_t x[5] = {1,2,3,4,5}, y[5] = {1,2,3,4,6};
+    CHECK(kci_ct_memcmp(x, x, 5) == 0 && kci_ct_memcmp(x, y, 5) == -1 && kci_ct_memcmp(x, y, 0) == 0, "kci_ct_memcmp");
+}
+
 static void test_wipe(void) {
     kci_key k;
     kci_key_setup(&k, kat_stream_key);
@@ -171,6 +295,12 @@ int main(void) {
     test_reduced_rounds();
     test_stream();
     test_counter_limit();
+    test_poly1305();
+    test_poly1305_edges();
+    test_aead_rfc8439();
+    test_aead_kats();
+    test_aead_tamper();
+    test_aead_limit_and_ctcmp();
     test_wipe();
     printf("%s: %d checks, %d failures\n", failures ? "FAILED" : "OK", checks, failures);
     return failures ? 1 : 0;
