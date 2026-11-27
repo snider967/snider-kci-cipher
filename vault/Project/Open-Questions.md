@@ -24,8 +24,8 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | # | Question | Status | Notes / default |
 |---|---|---|---|
 | Q6 | SHA-256 / hash: in-house or a library? | 🟡 | Default: in-house, no dependencies (needed for microcontrollers). |
-| Q7 | Build system? | 🟡 | Default: Makefile + CMake (CMake helps Windows/macOS/MCU toolchains). |
-| Q8 | Keep the Python files in the repo? | 🟡 | Default: keep them under `legacy/python/` as historical reference. |
+| Q7 | Build system? | 🟡 | Default **applied** (Session 02): Makefile (tested) + CMakeLists.txt (untested). Owner did not object. |
+| Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |
 | Q12 | Arbitrary bytes/files instead of ASCII? | 🟡 | With the redesign: yes. |
 | Q14 | A "legacy" mode that reads old v1/v2 ciphertexts? | 🟡 | Default: no (no known stored ciphertexts). |

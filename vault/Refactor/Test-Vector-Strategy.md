@@ -4,6 +4,14 @@ Back to [[00-Index]] · Related: [[KCI-Primitive-Design]], [[Porting-Map]]
 
 Updated 2026-11-27: after the redesign (D-007) the Python is **not** an oracle for the cipher output.
 
+## Status (Session 02, 2026-11-27)
+`make test` = 294 checks, all passing at -O0, -O2, -O3 -march=native and under ASan+UBSan:
+the RFC 8439 §2.3.2 block, a 300-byte ChaCha-mode keystream checked against OpenSSL (a third implementation),
+6 block KATs with their decks (including counters 0, 2³¹−1 and 2³²−1), 8 single-loop schedules, reduced rounds 1–8, a 300-byte
+stream KAT with chunked in-place decryption, the counter limit, and the wipe.
+Vectors come from the independent Python sketch, so they are **cross-implementation** checks, not self-generated.
+Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS, dudect timing.
+
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
    the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.

@@ -2,7 +2,7 @@
 
 Back to [[00-Index]] · Mapping: [[Porting-Map]] · Tests: [[Test-Vector-Strategy]] · Primitive: [[KCI-Primitive-Design]]
 
-Status: **draft**, updated 2026-11-27 after the owner's answers (redesign, all targets, lib + CLI + GUI).
+Status: **scaffold built** (Session 02, 2026-11-27): core block, deck, raw stream, wipe and tests exist. The API sketch below is superseded by `include/kci/kci.h`.
 
 ## Principles (D-010)
 - Portable **C11**, core uses only `uint32_t`/`uint64_t`, no `__int128`, **no heap**, no globals, caller-owned buffers.

@@ -3,7 +3,7 @@
 > Knowledge base for the **Python → C refactor** of `snider-kci-cipher`.
 > Obsidian-compatible (double-bracket wikilinks). Keep this index current whenever a note is added/renamed.
 
-**Status:** Phase 1 complete: KCI-20 spec **v0.2 accepted** (D-016..D-022). Next: Phase 2, scaffold the C project. No C code yet.
+**Status:** Phase 2 in progress: C scaffold builds, and the core block, deck and raw stream pass 294 checks. Next: Poly1305, SHA-256/PBKDF2, AEAD, CLI.
 **Branch:** `c-refactor` (PRs into `main`, see D-011)
 **Last updated:** 2026-11-27 (Session 02)
 **Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `2a837a4`)
@@ -18,8 +18,8 @@
 ## Codebase (current Python)
 - [[Repository-Map]] — files, history, dependencies
 - [[KCI-Loop-Model]] — the MtG combo model that drives key generation
-- [[v1-GUI-Block-Cipher]] — `snider_kci_cipher.py` (Tkinter, SHA-256, XOR/ECB)
-- [[v2-Lite-Stream-Cipher]] — `kci_cipher_v2_lite.py` (chained keystream)
+- [[v1-GUI-Block-Cipher]] — `legacy/python/snider_kci_cipher.py` (Tkinter, SHA-256, XOR/ECB)
+- [[v2-Lite-Stream-Cipher]] — `legacy/python/kci_cipher_v2_lite.py` (chained keystream)
 - [[Known-Issues-and-Quirks]] — bugs and behaviour the port must decide on
 - [[Cryptanalysis-Notes]] — security observations
 

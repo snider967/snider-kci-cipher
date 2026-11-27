@@ -39,5 +39,12 @@ Lessons:
 - An earlier single-block benchmark at `-O3` reported 2.9 GB/s for scalar, because the compiler removed unused work. Benchmarks must consume the full output.
 - Unmeasured: SSE2/SSSE3 (shift by `xmm` count, so probably slower than AVX2), NEON, scalar ARM/MCU.
 
+## Real portable C implementation (Session 02, 2026-11-27)
+Same machine, `gcc -O2`, `build/libkci.a`, 64 MiB of `kci_stream_xor`, best of 5:
+- `kci_core`: **381 MB/s**. `kci_block_words`: 364 MB/s. Stream XOR: **~316 MB/s**. Key setup: ~0.43 µs.
+- How it got there: wiping temporaries once per call instead of once per block (204 → 236 MB/s); unrolling 4 rounds so the
+  round-constant target and the column/diagonal choice are fixed in the code (core 295 → 381); a full-block XOR fast path (stream 286 → 316).
+  Interleaving the quarter-rounds step by step alone did not help in C.
+
 ## Baseline numbers (Python)
 _Not measured yet._
