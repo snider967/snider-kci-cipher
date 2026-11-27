@@ -1,0 +1,31 @@
+# KCI-20 rotation search, mode search, N = 2^14; bar = 1.10 x ChaCha's 3-round max|eps| = 0.2279
+  loop 0: v0.3 set {24,4,8,13} fails (0.5554); searching
+  loop 0: candidate 2 {16,3,24,27} accepted, worst start 0.2013
+  loop 1: kept v0.3 set {8,11,16,25}, worst start 0.1499
+  loop 2: kept v0.3 set {8,5,16,10}, worst start 0.1473
+  loop 3: v0.3 set {16,3,24,31} fails (0.2279); searching
+  loop 3: candidate 15 {8,13,16,2} accepted, worst start 0.1794
+  loop 4: v0.3 set {8,29,24,10} fails (0.3540); searching
+  loop 4: candidate 6 {16,6,8,1} accepted, worst start 0.2101
+  loop 5: v0.3 set {24,25,16,18} fails (0.2462); searching
+  loop 5: candidate 18 {8,3,16,14} accepted, worst start 0.2056
+  loop 6: v0.3 set {16,21,24,30} fails (0.2347); searching
+  loop 6: candidate 1 {8,4,16,25} accepted, worst start 0.1964
+  loop 7: v0.3 set {8,22,16,27} fails (0.4176); searching
+  loop 7: candidate 32 {16,6,8,25} accepted, worst start 0.2197
+
+## new table
+  {16, 3, 24, 27},
+  {8, 11, 16, 25},
+  {8, 5, 16, 10},
+  {8, 13, 16, 2},
+  {16, 6, 8, 1},
+  {8, 3, 16, 14},
+  {8, 4, 16, 25},
+  {16, 6, 8, 25},
+
+## new table, all 512 starts
+  starts above ChaCha (0.2279): 0 of 512; worst start (3,7,2) = 0.2197
+  histogram of 3-round max|eps|:  0.0-0.1: 342  0.1-0.2: 157  0.2-0.3: 13  0.3-0.4: 0  0.4-0.5: 0  0.5-0.6: 0  0.6-0.7: 0  0.7-1.0: 0
+  worst start containing each loop:  0: 0.210  1: 0.219  2: 0.220  3: 0.220  4: 0.210  5: 0.208  6: 0.196  7: 0.220
+

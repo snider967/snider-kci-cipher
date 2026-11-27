@@ -1,0 +1,6 @@
+# KCI-20 rotation search, mode starts, N = 2^16; bar = 1.00 x ChaCha's 3-round max|eps| = 0.2026
+
+## v0.3 table, all 512 starts
+  starts above the bar (0.2026): 58 of 512; worst start (3,3,7) = 0.6832
+  histogram of 3-round max|eps|:  0.0-0.1: 279  0.1-0.2: 173  0.2-0.3: 39  0.3-0.4: 13  0.4-0.5: 3  0.5-0.6: 3  0.6-0.7: 2  0.7-1.0: 0
+  worst start containing each loop:  0: 0.545  1: 0.305  2: 0.467  3: 0.683  4: 0.654  5: 0.340  6: 0.245  7: 0.683
