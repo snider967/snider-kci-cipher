@@ -6,12 +6,12 @@ Status: **library + CLI built** (Session 02, 2026-11-27): core block, deck, raw/
 (`src/simd/kci_avx2.c`, picked at run time), the CLI and the tests. The API sketch below is superseded by `include/kci/kci.h`.
 
 ## Principles (D-010)
-- Portable **C11**, core uses only `uint32_t`/`uint64_t`, no `__int128`, **no heap**, no globals, caller-owned buffers.
+- Portable **C11**, core uses only `uint32_t`/`uint64_t` (Poly1305 uses `unsigned __int128` where the compiler has it, with a 32-bit fallback), **no heap**, no globals, caller-owned buffers.
 - Optional fast paths (SSE2/AVX2/NEON, multi-block) behind compile-time feature checks, always tested against the
   portable path.
 - Constant-time core (no secret-dependent branches or table indexes).
 
-## Layout (proposed)
+## Layout (original proposal; actual files in [[Repository-Map]]: KDF and MAC live in `kci_sha256.c`, `kci_poly1305.c`, `kci_aead.c`)
 ```
 include/kci/kci.h          public API
 src/core/kci_round.c       the KCI round function (portable; rotations/constants loaded from the expanded deck)
@@ -45,4 +45,4 @@ void kci_wipe(kci_ctx *c);
 ```
 
 ## Toolchain present
-gcc 13.3, GNU make. Missing: clang, cmake, ARM/32-bit cross compilers, qemu-user, all to install when needed.
+Dev machine: gcc 13.3, GNU make. CI (free, D-025) adds clang, CMake, Linux ARM64, macOS ARM64 and gcc -m32. Windows/MSVC and MCU targets are not built anywhere yet.

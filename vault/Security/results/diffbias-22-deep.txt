@@ -1,0 +1,7 @@
+# KCI-20 single-bit differential bias, N = 2^22 samples per input bit, threshold 0.0029
+chacha                 r=3  max|eps|=0.2026 BIASED  (in w12.b21 -> out w02.b00)  significant pairs=1986
+chacha                 r=4  max|eps|=0.0021 random  (in w12.b27 -> out w04.b28)  significant pairs=0
+loop 0 x20             r=3  max|eps|=0.5447 BIASED  (in w14.b07 -> out w00.b07)  significant pairs=1276
+loop 0 x20             r=4  max|eps|=0.0018 random  (in w14.b00 -> out w15.b15)  significant pairs=0
+deck 4,4,7,2,...       r=3  max|eps|=0.6544 BIASED  (in w12.b23 -> out w02.b15)  significant pairs=1438
+deck 4,4,7,2,...       r=4  max|eps|=0.0022 random  (in w12.b28 -> out w00.b14)  significant pairs=0

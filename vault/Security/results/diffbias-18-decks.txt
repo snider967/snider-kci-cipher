@@ -1,0 +1,8 @@
+# KCI-20 single-bit differential bias, N = 2^18 samples per input bit, threshold 0.0117
+
+## 4. Random decks from random keys (real key setup): rounds until clean, screening subset
+  400 decks; first clean round histogram:  r3: 30  r4: 370
+  worst deck (bias 0.5316 in round 3 on the screening subset): 4 4 7 2 3 7 7 4 2 6 4 5 6 7 2 6 7 6 7 4
+worst random deck      r=3  max|eps|=0.6514 BIASED  (in w14.b23 -> out w00.b15)  significant pairs=2170
+worst random deck      r=4  max|eps|=0.0091 random  (in w15.b06 -> out w06.b13)  significant pairs=0
+worst random deck      r=5  max|eps|=0.0095 random  (in w12.b25 -> out w00.b06)  significant pairs=0

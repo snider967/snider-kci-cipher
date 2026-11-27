@@ -16,9 +16,9 @@ Back to [[00-Index]] · Related: [[Open-Questions]], [[Decisions-Log]]
 - A general MtG rules engine.
 
 ## Success criteria
-- [ ] Written design spec for the new primitive ([[KCI-Primitive-Design]]) reviewed by the owner before coding the core.
-- [ ] C reference implementation + frozen test vectors.
-- [ ] Fixes every weakness in [[Cryptanalysis-Notes]] (no repeating-key XOR, nonce, no degenerate cycles, nonlinear mixing).
+- [x] Written design spec for the new primitive ([[KCI-Primitive-Design]]) reviewed by the owner before coding the core.
+- [x] C reference implementation + frozen test vectors (Session 02).
+- [x] Fixes every weakness in [[Cryptanalysis-Notes]] (no repeating-key XOR, nonce, no degenerate cycles, nonlinear mixing).
 - [ ] Passes statistical batteries on the keystream (e.g. PractRand / TestU01 SmallCrush/Crush). This is evidence, not proof.
-- [ ] Warning-free on gcc/clang (`-Wall -Wextra -Wpedantic`), clean under ASan/UBSan, builds for a 32-bit target.
-- [ ] Benchmarks: cycles/byte on x86-64 and ARM64, vs the Python baseline.
+- [x] Warning-free on gcc/clang (`-Wall -Wextra -Wpedantic`), clean under ASan/UBSan, builds for a 32-bit target (CI, Session 02; MCU target not yet).
+- [ ] Benchmarks: cycles/byte on x86-64 and ARM64, vs the Python baseline (x86-64 MB/s only so far).

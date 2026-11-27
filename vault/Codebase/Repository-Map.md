@@ -2,7 +2,7 @@
 
 Back to [[00-Index]]
 
-## Files on `c-refactor` (Session 02, 2026-11-27)
+## Files on `main` (Session 02, 2026-11-27, after PRs #1 and #2)
 | Path | Purpose |
 |---|---|
 | `legacy/python/snider_kci_cipher.py`, `legacy/python/kci_cipher_v2_lite.py` | the 2023 Python (moved here, Q8) |
@@ -22,7 +22,10 @@ Back to [[00-Index]]
 | `tests/cli_test.sh` | end-to-end CLI tests, cross-checked with `tools/kci_file.py` |
 | `tools/kci_ref.py`, `tools/gen_vectors.py`, `tools/kci_file.py` | Python reference sketch, vector generator, independent file-format tool |
 | `bench/prototype/` | Session 02 prototype benchmarks (fixed vs key-selected rotations) |
-| `Makefile` (tested), `CMakeLists.txt` (untested: no cmake yet) | build |
+| `Makefile`, `CMakeLists.txt` | build (CMake is tested in CI only; no cmake on the dev machine) |
+| `.github/workflows/ci.yml` | CI: Linux x86-64 gcc/clang, Linux ARM64, macOS ARM64, gcc -m32, CMake (D-025) |
+| `tools/analysis/kci_diffbias.c`, `tools/analysis/kci_deckstats.c` | security analysis tools (`make analysis`); results in `vault/Security/results/`, write-up in [[Cryptanalysis-Notes]] |
+| `tools/check_ci_cost.py` | enforces the $0 rule on every workflow; first CI job |
 | `LICENSE` | Apache-2.0 (D-015); covers the whole repo, including the legacy Python |
 
 ## Files (upstream HEAD `2a837a4`, before the move)
@@ -39,7 +42,7 @@ No tests, no requirements file, no license, no packaging.
 ## Dependencies
 - v1: `numpy` (only `numpy.power` in `key_gen_function`), `hashlib.sha256`, `tkinter`.
 - v2: `random` (demo key), `timeit`/`numpy` (only in the commented-out benchmark).
-- The local machine has Python 3.12.3 **without numpy**, and gcc 13.3 + make. No clang or cmake.
+- The local machine has Python 3.12.3 **without numpy**, and gcc 13.3 + make. No clang, cmake, multilib or cross compilers: those run in CI.
 
 ## Git history (all 2023-10-11 … 2023-10-12)
 ```

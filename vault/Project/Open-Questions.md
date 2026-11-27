@@ -25,8 +25,10 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 | # | Question | Status | Notes / default |
 |---|---|---|---|
 | Q6 | SHA-256 / hash: in-house or a library? | 🟡 | Default **applied** (Session 02): in-house `kci_sha256.c`. Owner did not object. |
-| Q7 | Build system? | 🟡 | Default **applied** (Session 02): Makefile (tested) + CMakeLists.txt (untested). Owner did not object. |
+| Q7 | Build system? | 🟡 | Default **applied** (Session 02): Makefile + CMakeLists.txt, both tested in CI. Owner did not object. |
 | Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |
 | Q12 | Arbitrary bytes/files instead of ASCII? | 🟡 | With the redesign: yes. |
+| Q20 | Retune the weakest loop rotation sets (spec v0.4)? | 🔴 | Analysis: loops 0 and 4 have 3-round single-bit bias 0.55 / 0.36 vs ChaCha 0.20 (all clean at 4 rounds). Proposal: rerun the rotation search with "3-round bias ≤ ChaCha's" as the filter; keeps 8 key-selected loops. Needs new KATs. See [[Cryptanalysis-Notes]]. |
+| Q21 | Install a SAT/MILP solver (e.g. `pysat` or `z3-solver` from PyPI, free) for trail bounds? | 🔴 | Needed for spec §12 item 1 proper. |
 | Q14 | A "legacy" mode that reads old v1/v2 ciphertexts? | 🟡 | Default: no (no known stored ciphertexts). |
