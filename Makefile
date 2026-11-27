@@ -7,7 +7,7 @@ WARN    := -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prot
 CPPFLAGS += -Iinclude
 BUILD   ?= build
 
-LIB_SRC := src/core/kci_round.c src/core/kci_deck.c src/core/kci_stream.c src/core/kci_poly1305.c src/core/kci_aead.c src/core/kci_sha256.c src/util/kci_wipe.c
+LIB_SRC := src/core/kci_round.c src/core/kci_deck.c src/core/kci_stream.c src/core/kci_poly1305.c src/core/kci_aead.c src/core/kci_sha256.c src/simd/kci_avx2.c src/util/kci_wipe.c
 LIB_OBJ := $(LIB_SRC:%.c=$(BUILD)/%.o)
 LIB     := $(BUILD)/libkci.a
 TEST    := $(BUILD)/test_kci

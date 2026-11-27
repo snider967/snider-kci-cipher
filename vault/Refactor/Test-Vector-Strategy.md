@@ -29,6 +29,12 @@ Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS
 - PBKDF2-HMAC-SHA256: RFC 7914 §11 #1 (c = 1) and #2 (c = 80 000), plus c = 2, 3, 5 and 4096, an empty password, a 100-byte password and a 97-byte output.
   `kci_kdf_password` at 600 000 iterations is checked, and so are refusals below 100 000 iterations or below a 16-byte salt.
 
+**AVX2 path (Session 02):** **1336 library + 69 CLI checks**. The AVX2 kernel is compared directly against the portable `kci_block`
+for 24 keys (24 decks) at counters including 0xfffffff0 and 0xfffffff8. It is also compared through the stream API with odd lead-ins and lengths
+511–8192, which exercises the dispatch and the portable tail. The last 8 counters before the limit go through AVX2 and then the limit is enforced.
+In the CLI, 5000-byte C ↔ Python cross-checks go through the AVX2 path. A mutant AVX2 kernel (wrong ρ3 mask) gives 129 failures.
+Every build variant passes: -O0, -O2, -O3 -march=native, ASan+UBSan, and `-DKCI_NO_SIMD` (portable everywhere: 1312 checks, since the direct-kernel checks are skipped).
+
 **Spec v0.3 (domain separation):** **1141 library + 67 CLI checks**. Added a raw-mode KAT (`kat_raw_ct`, from the Python `block_raw`), checks that raw ≠ AEAD
 under the same key and nonce, that `kci_raw_init` leaves the caller's key alone, that a downgraded file decrypts to garbage even with `--raw`,
 and that a raw file relabelled as AEAD fails authentication. The C ↔ Python raw-file cross-check uses the new raw domain on both sides.

@@ -51,5 +51,19 @@ Same machine, `gcc -O2`, `build/libkci.a`, 64 MiB of `kci_stream_xor`, best of 5
   A SHA-256 fast path (SHA-NI / ARMv8 SHA2 instructions) is a later option.
 - CLI, 256 MiB file with a key file: enc 1.16 s, dec 1.16 s (~230 MB/s each), max RSS 1.6 MB whatever the file size (64 KiB chunks).
 
+## AVX2 path (Session 02, `src/simd/kci_avx2.c`)
+8 blocks at once, with the v0.2 rotation layout: d rotations are byte shuffles with masks picked in constant time, b rotations use `vpsllvd`/`vpsrlvd`.
+It is selected at run time (`__builtin_cpu_supports("avx2")`) and `kci_impl()` reports which path is in use. Same machine, `gcc -O2`, best of 5:
+
+| | Portable | AVX2 | Speed-up |
+|---|---|---|---|
+| Raw stream (128 MiB) | 311 MB/s | **3 077 MB/s** | 9.9× |
+| AEAD encrypt (64 MiB) | 257 MB/s | **1 011 MB/s** | 3.9× (now limited by portable Poly1305) |
+| CLI, 256 MiB file, enc / dec | 1.16 s / 1.16 s | **0.40 s / 0.41 s** | 2.9× (RSS 1.6 MB) |
+
+The raw stream matches the prototype (3 150 MB/s, [[KCI-Primitive-Design]] §11), so the real kernel kept the prototype's
+"key-selected loops cost nothing" result. **Next bottleneck: Poly1305.** Options: a 64-bit-limb (`__int128`) path for x86-64/ARM64
+(typically 2–3× faster) or an AVX2 Poly1305.
+
 ## Baseline numbers (Python)
 _Not measured yet._

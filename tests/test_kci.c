@@ -397,6 +397,63 @@ static void test_kdf_password(void) {
           "short salt must be refused");
 }
 
+/* Reference keystream: one portable kci_block per counter. */
+static void ref_xor(uint8_t *out, const uint8_t *in, size_t len, const kci_key *k, const uint8_t nonce[12], uint32_t ctr) {
+    uint8_t blk[64];
+    for (size_t off = 0; off < len; off += 64, ctr++) {
+        kci_block(blk, k, ctr, nonce);
+        for (size_t i = 0; i < 64 && off + i < len; i++) out[off + i] = in[off + i] ^ blk[i];
+    }
+}
+
+/* The AVX2 path (when this CPU has it) must equal the portable block function exactly. */
+static void test_simd_matches_portable(void) {
+    static uint8_t in[8192 + 64], a[8192 + 64], b[8192 + 64];
+    uint32_t seed = 0x6b636921u;
+    for (size_t i = 0; i < sizeof in; i++) { seed = seed * 1664525u + 1013904223u; in[i] = (uint8_t)(seed >> 24); }
+    printf("keystream implementation: %s\n", kci_impl());
+
+    for (int t = 0; t < 24; t++) {                       /* 24 keys -> 24 different decks */
+        uint8_t key[32], nonce[12];
+        for (int i = 0; i < 32; i++) { seed = seed * 1664525u + 1013904223u; key[i] = (uint8_t)(seed >> 24); }
+        for (int i = 0; i < 12; i++) { seed = seed * 1664525u + 1013904223u; nonce[i] = (uint8_t)(seed >> 24); }
+        kci_key k; kci_key_setup(&k, key);
+
+        /* direct call of the 8-block kernel */
+        if (kci_avx2_available()) {
+            uint32_t nw[3]; for (int i = 0; i < 3; i++) nw[i] = kci_load32(nonce + 4 * i);
+            uint32_t ctr = (t % 3 == 0) ? 0xfffffff8u - 8u * (uint32_t)(t % 2) : (uint32_t)t * 1000u;
+            kci_avx2_xor(a, in, 2, &k, nw, ctr);
+            ref_xor(b, in, 1024, &k, nonce, ctr);
+            CHECK(memcmp(a, b, 1024) == 0, "AVX2 kernel != portable, key %d ctr 0x%08x", t, (unsigned)ctr);
+        }
+
+        /* through the stream API: odd lead-in, then a long run (dispatch), then a tail */
+        static const size_t lens[] = { 511, 512, 513, 1000, 4096, 4097, 8192 };
+        for (size_t li = 0; li < sizeof lens / sizeof lens[0]; li++) {
+            size_t len = lens[li], lead = (size_t)(t * 7) % 70;
+            kci_stream s;
+            kci_raw_init(&s, &k, nonce);
+            kci_stream_xor(&s, a, in, lead);
+            kci_stream_xor(&s, a + lead, in + lead, len);
+            kci_raw_init(&s, &k, nonce);
+            kci_key rk = s.key;                           /* raw-domain key copy for the reference */
+            ref_xor(b, in, lead + len, &rk, nonce, 1);
+            CHECK(memcmp(a, b, lead + len) == 0, "stream (lead %zu, len %zu) != portable, key %d", lead, len, t);
+        }
+        kci_key_wipe(&k);
+    }
+
+    /* last 8 counters before the limit go through AVX2 without wrapping */
+    kci_key k; kci_stream s;
+    kci_key_setup(&k, kat_stream_key);
+    kci_stream_init(&s, &k, kat_stream_nonce, 0xfffffff8u);
+    CHECK(kci_stream_xor(&s, a, in, 512) == KCI_OK, "last 8 blocks");
+    ref_xor(b, in, 512, &k, kat_stream_nonce, 0xfffffff8u);
+    CHECK(memcmp(a, b, 512) == 0, "last 8 blocks via AVX2 == portable");
+    CHECK(kci_stream_xor(&s, a, in, 1) == KCI_ERR_LIMIT, "nothing left after the last block");
+}
+
 static void test_wipe(void) {
     kci_key k;
     kci_key_setup(&k, kat_stream_key);
@@ -426,6 +483,7 @@ int main(void) {
     test_hmac_sha256();
     test_pbkdf2();
     test_kdf_password();
+    test_simd_matches_portable();
     test_wipe();
     printf("%s: %d checks, %d failures\n", failures ? "FAILED" : "OK", checks, failures);
     return failures ? 1 : 0;

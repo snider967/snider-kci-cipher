@@ -14,6 +14,7 @@ add_library(kci STATIC
     src/core/kci_poly1305.c
     src/core/kci_aead.c
     src/core/kci_sha256.c
+    src/simd/kci_avx2.c
     src/util/kci_wipe.c)
 target_include_directories(kci PUBLIC include)
 

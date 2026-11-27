@@ -120,6 +120,9 @@ int kci_kdf_password(uint8_t key[KCI_KEY_BYTES], const uint8_t *pw, size_t pw_le
 /* Constant-time comparison: 0 if equal, -1 otherwise. */
 int kci_ct_memcmp(const void *a, const void *b, size_t n);
 
+/* Which keystream implementation this build uses on this CPU: "avx2" or "portable". */
+const char *kci_impl(void);
+
 /* Secure wipe (not removed by the optimiser). */
 void kci_wipe(void *p, size_t n);
 void kci_key_wipe(kci_key *k);

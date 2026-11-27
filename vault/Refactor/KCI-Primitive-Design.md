@@ -192,6 +192,8 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 - Poly1305 needs a constant-time 32×32→64-bit multiply. That holds on x86, ARMv7-A/ARMv8 and Cortex-M4/M7 (`UMULL` takes 1 cycle). It does
   **not** hold on Cortex-M3, whose `UMULL`/`SMULL` take 3–5 cycles depending on the operands, and possibly not on Cortex-M0 when a library supplies the 64-bit multiply.
   If the M3/M0 targets become real, they need a multiply routine with a fixed cycle count.
+- The AVX2 path picks each round's byte-shuffle mask with compare-and-mask (no secret index), and broadcasts the shift counts.
+  Its compiled code has only loop-control branches. Its per-call schedule is wiped. Register spills of the state are not, which is the same limit any C implementation has.
 - Secrets are wiped with a non-elidable `kci_wipe` before return. The dudect-style timing test covers key setup, `block`, `kci_xor`
   and the tag check, and it must include keys with very different decks.
 
@@ -266,7 +268,10 @@ Python reference. The values below are from the design stage (v0.2) and are unch
 The x86 scalar slowdown matters little in practice, because every x86-64 CPU has SSE2 and almost all have SSSE3/AVX2. On ARM, scalar
 `ROR` by a register takes 1 cycle, so the scalar cost there should be small. That is **unmeasured**: no ARM toolchain or qemu yet.
 
-**Not verified:** Poly1305, PBKDF2, AEAD, the file format (none implemented); SSE2/SSSE3/NEON speed; statistical batteries; timing tests.
+**Real implementation (later in Session 02):** the C AVX2 path runs the raw stream at **3 077 MB/s**, against 311 MB/s portable, which
+confirms the prototype. See [[Performance-Notes]].
+
+**Not verified:** SSE2/SSSE3/NEON speed; statistical batteries; timing tests.
 
 ## 12. Improvement roadmap (carry forward, don't abandon)
 1. **Differential and linear trail bounds** for each of the 8 rotation sets, and for the worst decks (one loop repeated 20 times,

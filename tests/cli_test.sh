@@ -105,6 +105,9 @@ check "C enc (password) -> Python dec" '"$KCI" enc --password-file pw -i $MIN x 
 check "Python enc (key) -> C dec" '$PYFILE enc --key-file key x yc && "$KCI" dec -k key yc yd && cmp -s x yd'
 check "Python enc (password) -> C dec" '$PYFILE enc --password-file pw --iterations $MIN x ycp && "$KCI" dec --password-file pw ycp ydp && cmp -s x ydp'
 check "Python enc (raw) -> C dec" '$PYFILE enc --key-file key --raw x yr && "$KCI" dec --raw -k key yr ydr 2>/dev/null && cmp -s x ydr'
+head -c 5000 /dev/urandom > x5
+check "C enc (key, 5000 bytes: AVX2 path when available) -> Python dec" '"$KCI" enc -k key x5 x5c && $PYFILE dec --key-file key x5c x5d && cmp -s x5 x5d'
+check "Python enc (raw, 5000 bytes) -> C dec" '$PYFILE enc --key-file key --raw x5 x5r && "$KCI" dec --raw -k key x5r x5rd 2>/dev/null && cmp -s x5 x5rd'
 cp xc t; flip t 100
 check "Python also rejects a tampered C file" '! $PYFILE dec --key-file key t tz 2>/dev/null'
 

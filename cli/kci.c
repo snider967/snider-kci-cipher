@@ -417,7 +417,7 @@ static int cmd_bench(void)
         t = now() - t;
         if (t < best) best = t;
     }
-    printf("AEAD encrypt (portable C): %.0f MB/s\n", 64.0 * (double)sizeof buf / best / 1e6);
+    printf("AEAD encrypt (%s): %.0f MB/s\n", kci_impl(), 64.0 * (double)sizeof buf / best / 1e6);
     double t = now();
     kci_kdf_password(key, (const uint8_t *)"password", 8, salt, sizeof salt, KCI_KDF_DEFAULT_ITERATIONS);
     printf("password KDF, %u iterations: %.2f s\n", KCI_KDF_DEFAULT_ITERATIONS, now() - t);

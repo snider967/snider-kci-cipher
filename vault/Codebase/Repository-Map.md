@@ -14,6 +14,7 @@ Back to [[00-Index]]
 | `src/core/kci_aead.c` | AEAD encrypt/decrypt, constant-time compare |
 | `src/core/kci_sha256.c` | SHA-256, HMAC-SHA256, PBKDF2, `kci_kdf_password` |
 | `src/core/kci_internal.h` | internals shared with the tests |
+| `src/simd/kci_avx2.c` | AVX2 8-block keystream, chosen at run time (`target("avx2")`, no build flags) |
 | `src/util/kci_wipe.c` | secure wipe |
 | `cli/kci.c` | `kci enc/dec/keygen/selftest/bench`, file format v1 |
 | `cli/platform.c`, `cli/platform.h` | OS randomness, no-echo password prompt, 0600 files, rename (POSIX tested, Win32 untested) |

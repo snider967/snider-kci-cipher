@@ -2,7 +2,8 @@
 
 Back to [[00-Index]] · Mapping: [[Porting-Map]] · Tests: [[Test-Vector-Strategy]] · Primitive: [[KCI-Primitive-Design]]
 
-Status: **scaffold built** (Session 02, 2026-11-27): core block, deck, raw stream, wipe and tests exist. The API sketch below is superseded by `include/kci/kci.h`.
+Status: **library + CLI built** (Session 02, 2026-11-27): core block, deck, raw/AEAD streams, Poly1305, SHA-256/PBKDF2, the AVX2 path
+(`src/simd/kci_avx2.c`, picked at run time), the CLI and the tests. The API sketch below is superseded by `include/kci/kci.h`.
 
 ## Principles (D-010)
 - Portable **C11**, core uses only `uint32_t`/`uint64_t`, no `__int128`, **no heap**, no globals, caller-owned buffers.

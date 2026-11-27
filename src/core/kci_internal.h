@@ -58,6 +58,17 @@ void kci_hmac_sha256(uint8_t out[KCI_SHA256_BYTES], const uint8_t *key, size_t k
 void kci_pbkdf2_hmac_sha256(uint8_t *out, size_t out_len, const uint8_t *pw, size_t pw_len,
                             const uint8_t *salt, size_t salt_len, uint32_t iterations);
 
+/* AVX2 8-block path (src/simd/kci_avx2.c). Built on x86-64 with GCC/Clang; chosen at run time. */
+#if (defined(__x86_64__) || defined(__i386__)) && (defined(__GNUC__) || defined(__clang__)) && !defined(KCI_NO_SIMD)
+#define KCI_HAVE_AVX2 1
+#else
+#define KCI_HAVE_AVX2 0
+#endif
+int  kci_avx2_available(void);
+/* out = in XOR keystream of blocks ctr .. ctr + 8*groups - 1 (512 bytes per group); caller ensures no counter wrap. */
+void kci_avx2_xor(uint8_t *out, const uint8_t *in, size_t groups,
+                  const kci_key *k, const uint32_t nonce[3], uint32_t ctr);
+
 /* Deck derivation without expansion: writes the 20 secret loop picks (spec 4.2 steps 1-2). Test hook. */
 void kci_shuffle_deck(uint8_t deck[KCI_ROUNDS], const uint8_t key[KCI_KEY_BYTES]);
 

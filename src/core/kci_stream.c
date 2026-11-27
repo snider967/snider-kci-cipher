@@ -38,6 +38,13 @@ int kci_stream_xor(kci_stream *s, uint8_t *out, const uint8_t *in, size_t len)
         s->used += (uint32_t)take;
         out += take; in += take; len -= take;
     }
+    /* 8 blocks at a time with AVX2 when the CPU has it (same output as the portable path; tested in tests/) */
+    if (len >= 8 * KCI_BLOCK_BYTES && kci_avx2_available()) {
+        size_t groups = len / (8 * KCI_BLOCK_BYTES);
+        kci_avx2_xor(out, in, groups, &s->key, s->nonce, (uint32_t)s->next_ctr);  /* limit check above: no wrap */
+        s->next_ctr += (uint64_t)groups * 8;
+        out += groups * 8 * KCI_BLOCK_BYTES; in += groups * 8 * KCI_BLOCK_BYTES; len -= groups * 8 * KCI_BLOCK_BYTES;
+    }
     /* full blocks straight through a local buffer (lets the compiler vectorise the XOR) */
     while (len >= KCI_BLOCK_BYTES) {
         kci_block_words(ks, &s->key, (uint32_t)s->next_ctr, s->nonce, scratch);
@@ -61,4 +68,9 @@ int kci_stream_xor(kci_stream *s, uint8_t *out, const uint8_t *in, size_t len)
     kci_wipe(scratch, sizeof scratch);
     kci_wipe(ks, sizeof ks);
     return KCI_OK;
+}
+
+const char *kci_impl(void)
+{
+    return kci_avx2_available() ? "avx2" : "portable";
 }
