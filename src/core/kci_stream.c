@@ -12,7 +12,7 @@ void kci_stream_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NO
     s->used = KCI_BLOCK_BYTES;
 }
 
-/* Raw mode (spec v0.3 section 5): same key and deck, raw-mode stack constants, counters from 1. */
+/* Raw mode (spec section 5, since v0.3): same key and deck, raw-mode stack constants, counters from 1. */
 void kci_raw_init(kci_stream *s, const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES])
 {
     kci_stream_init(s, k, nonce, 1);

@@ -1,4 +1,4 @@
-"""Independent Python reader/writer for KCI-20 file format v1 (spec v0.3 section 10), built only on tools/kci_ref.py
+"""Independent Python reader/writer for KCI-20 file format 2 (spec v0.4 section 10), built only on tools/kci_ref.py
 and hashlib. Used by tests/cli_test.sh to cross-check the C CLI. Slow (pure Python); small files only.
 
   python3 -I tools/kci_file.py dec (--key-file K | --password-file P) IN OUT
@@ -10,7 +10,7 @@ import hashlib, os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kci_ref as K  # noqa: E402
 
-MAGIC = b'KCI\x01'
+MAGIC = b'KCI\x02'   # format 2 = KCI-20 v0.4 (D-028)
 
 def keystream_xor(k, nonce, data, raw=False):
     out = bytearray()

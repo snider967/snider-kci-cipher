@@ -1,0 +1,27 @@
+# KCI-20 deck statistics, 2^22 random keys
+
+## 1. Uniformity
+  single positions (20 tests, df 7): largest chi-square z = 1.72
+  adjacent pairs   (19 tests, df 63): largest chi-square z = 1.24   (|z| < ~3 is consistent with uniform)
+
+## 5. Weak-looking decks: observed vs ideal uniform (per 2^22 keys)
+  longest run of one loop:  1: 331738/332290  2: 2915625/2913689  3: 825504/826858  4: 107093/107141  5: 12695/12638  6: 1453/1495  7: 179/170  8: 14/21  9: 3/2
+  distinct loops in the deck:  3: 1/0  4: 282/283  5: 18315/18351  6: 315596/315089  7: 1635206/1634895  8: 2224904/2225686
+
+## 2. Related keys: one key bit flipped (2^16 keys x 256 bits)
+  equal deck positions: mean 2.5000 (ideal 2.5000); worst key bit 223 with z = -2.56 over 256 bits (|z| < ~3.5 expected)
+  histogram of equal positions (count / ideal Binomial(20,1/8)):
+    0:1161297/1161130 1:3318991/3317515 2:4500256/4502342 3:3859504/3859150 4:2342074/2343056 5:1072572/1071111 6:382583/382540 7:108568/109297 8:25614/25373 9:4870/4833 10:776/759
+  identical decks after a 1-bit key change: 0 of 16777216 (ideal 1.5e-11)
+
+## 3. Structured keys
+  zero key deck:    2 4 3 7 2 0 6 7 4 3 0 3 1 6 5 2 4 5 1 2
+  0xff.. key deck:  6 6 4 0 6 2 2 5 1 7 1 6 3 2 7 1 2 6 4 7
+  00 01 .. 1f deck: 0 3 5 6 6 4 6 7 3 7 4 5 2 4 2 4 3 7 4 6
+  513 structured keys (zero, all-ones, 256 single-bit, 254 repeated-byte, counting):
+    loop counts chi-square z = 0.09; longest run 5; fewest distinct loops 5
+    pairwise equal positions: mean 2.4913 (ideal 2.5), max 10 over 131328 pairs
+
+## 4. Full KCI-20 block, related keys (deck changes too): flip probability of each output bit
+  2^14 keys per key bit; max |eps| = 0.0343 (key bit 183 -> output bit 38); noise level for 131072 pairs ~ 0.0383
+  flipped output bits per pair: min 195, max 313 (of 512)

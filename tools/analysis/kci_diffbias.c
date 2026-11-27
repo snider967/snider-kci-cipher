@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
     if (argc > 2 && strcmp(argv[2], "deep") == 0) {
         /* 4-round check at high precision: all 32 bits of the input word that carries the strongest 3-round bias */
-        static const uint8_t worst_deck[KCI_ROUNDS] = {4,4,7,2,3,7,7,4,2,6,4,5,6,7,2,6,7,6,7,4};  /* section 4, 2^18 run */
+        static const uint8_t worst_deck[KCI_ROUNDS] = {4,4,7,2,3,7,7,4,2,6,4,5,6,7,2,6,7,6,7,4};  /* worst v0.3 deck (section 4, 2^18 run on v0.3); kept for comparison */
         const char *names[3] = {"chacha", "loop 0 x20", "deck 4,4,7,2,..."};
         for (int c = 0; c < 3; c++) {
             if (c == 0) sched_chacha(&S);

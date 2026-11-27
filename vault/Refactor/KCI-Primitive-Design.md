@@ -2,11 +2,14 @@
 
 Back to [[00-Index]] · Decisions: D-007, D-009, D-010, D-012..D-024 in [[Decisions-Log]] · Layout: [[C-Architecture-Plan]] · Speed: [[Performance-Notes]]
 
-**Status:** **v0.3 accepted** (2026-11-27); **v0.4 draft** in §13 (retuned rotation sets, Q20), awaiting owner sign-off. v0.2 was signed off as P1–P6 → D-017..D-022. v0.3 adds raw/AEAD domain separation (Q19 → D-024).
-Implemented in C on `c-refactor`. Changes from here need a new version and a decision entry.
+**Status:** **v0.4 accepted** (2026-11-27, P7/P8 → D-027/D-028): retuned loop rotation sets (§4.3, §13) and file format 2. v0.2 was signed off as P1–P6 → D-017..D-022. v0.3 adds raw/AEAD domain separation (Q19 → D-024).
+Implemented in C (v0.4: draft PR #4, implementation PR #5). Changes from here need a new version and a decision entry.
 Reference sketch: `tools/kci_ref.py` (pure Python, used to check this spec; it is not the KAT source).
 
 > ⚠️ KCI-20 is an original, unreviewed cipher. It is for research and fun. Do not present it as secure for real data.
+
+**Changes in v0.4:** six of the eight loops get new rotation amounts, so every 3-loop deck start is no weaker than ChaCha at 3 rounds
+(v0.3: 58 of 512 starts were, worst 3.4×). The file magic becomes `"KCI\x02"`. Everything else is unchanged (§13).
 
 **Changes in v0.3:** raw mode gets its own stack constants (`"KCI 256-bit raw!"`), so raw and AEAD keystreams never coincide
 (§4.1, §5). This closes the mode-downgrade the CLI tests found in v0.2.
@@ -107,26 +110,29 @@ c += d; b ^= c; b <<<= ρ2        // ρ2: any amount, not a multiple of 8
 a += b; d ^= a; d <<<= ρ3        // ρ3 ∈ {8, 16, 24}, ρ3 ≠ ρ1
 c += d; b ^= c; b <<<= ρ4        // ρ4: any amount, not a multiple of 8, ρ4 ≠ ρ2; at least one of ρ2, ρ4 is odd
 ```
-**Loop rotation sets** (normative table; `tools/kci_ref.py` stores it as `FROZEN`):
+**Loop rotation sets, v0.4** (normative table; `tools/kci_ref.py` stores it as `FROZEN`; the v0.3 table is in §13):
 
 | Loop s | Pieces (from the 2023 code) | ρ1 | ρ2 | ρ3 | ρ4 | packed[s] |
 |---|---|---|---|---|---|---|
-| 0 | KCI, Trawler, Myr ×2, Mox Opal | 24 | 4 | 8 | 13 | `0x02253250` |
+| 0 | KCI, Trawler, Myr ×2, Mox Opal | 16 | 3 | 24 | 27 | `0x02253250` |
 | 1 | KCI, Trawler, Spine, Mind Stone, Chromatic Star, Mox | 8 | 11 | 16 | 25 | `0x046a0aa1` |
 | 2 | KCI, Trawler, Myr, Chromatic Star ×2, Mox | 8 | 5 | 16 | 10 | `0x04593691` |
-| 3 | KCI, Trawler, Myr, Chromatic Star, Mox | 16 | 3 | 24 | 31 | `0x03580771` |
-| 4 | KCI, Trawler ×2, Myr, Mox | 8 | 29 | 24 | 10 | `0x044a55a0` |
-| 5 | KCI, Trawler ×2, Spine, Ichor Wellspring, Mox ×2 | 24 | 25 | 16 | 18 | `0x058d49d2` |
-| 6 | KCI, Trawler, Myr, Chromatic Sphere ×2, Mox | 16 | 21 | 24 | 30 | `0x04493690` |
-| 7 | KCI, Trawler, Myr, Pyrite Spellbomb, Mox | 8 | 22 | 16 | 27 | `0x04490770` |
+| 3 | KCI, Trawler, Myr, Chromatic Star, Mox | 8 | 13 | 16 | 2 | `0x03580771` |
+| 4 | KCI, Trawler ×2, Myr, Mox | 8 | 14 | 24 | 17 | `0x044a55a0` |
+| 5 | KCI, Trawler ×2, Spine, Ichor Wellspring, Mox ×2 | 8 | 3 | 16 | 14 | `0x058d49d2` |
+| 6 | KCI, Trawler, Myr, Chromatic Sphere ×2, Mox | 8 | 4 | 16 | 25 | `0x04493690` |
+| 7 | KCI, Trawler, Myr, Pyrite Spellbomb, Mox | 8 | 12 | 16 | 1 | `0x04490770` |
 
-**Where the rotation amounts come from.** For each loop, a deterministic search is seeded with that loop's packed vector
+**Where the rotation amounts come from (v0.4).** `tools/analysis/kci_rotsearch.c` (`search 14`) fills loops 0…7 in order: it keeps the v0.3 set if it passes,
+otherwise it draws candidates from splitmix64 seeded with `packed[s]` under the rules above. A set is accepted when every 3-loop deck start built from it and the
+loops accepted so far has a 3-round single-bit differential bias no larger than ChaCha's (all 512 starts, so it covers every deck). Loops 1 and 2 are kept from v0.3.
+Details and measurements: §13 and [[Cryptanalysis-Notes]]. **The table is normative; the search documents where it came from.**
+
+_v0.3 provenance (history):_ for each loop, a deterministic search is seeded with that loop's packed vector
 (`random.Random(packed[s])` in CPython). It draws candidate sets under the §4.3 rules, skips sets already taken, and keeps the
 first one that passes a diffusion filter: used on its own for 2 rounds, it must reach ≥ 95 % of ChaCha's avalanche, and at 3 rounds
-it must have a mean ≥ 254/512 flipped bits with a minimum ≥ 200. `python3 -I tools/kci_ref.py --search` reruns the search and
-confirms it reproduces the table. **The table is normative, and the search only documents where it came from.**
-⚠️ The filter is weak: almost any random set passes. It removes obviously bad sets, but it is no substitute for differential
-trail analysis (§12, first improvement).
+it must have a mean ≥ 254/512 flipped bits with a minimum ≥ 200. `python3 -I tools/kci_ref.py --search` still reproduces the v0.3 table.
+That filter was weak: almost any random set passed, which is why v0.4 replaced it.
 
 `packed[s] = cd | mpil<<4 | msil<<8 | nmp<<12 | gat<<16 | tos<<20 | sos<<24`, built from the loop vector
 `(cd, mpil, msil, nmp, gat, tos, sos)` in [[KCI-Loop-Model]] (all entries ≤ 13, so they fit 4 bits).
@@ -216,11 +222,13 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 - **P4** KDF = PBKDF2-HMAC-SHA256, 16-byte salt, 600 000 iterations by default (§6).
 - **P5** AEAD = RFC 8439 composition with Poly1305; raw mode behind `--raw` (§5, §7). v0.3 (D-024): raw mode uses its own constants, no longer the AEAD ciphertext minus the tag.
 - **P6** File format below.
+- **P7** (v0.4, D-027) Rotation table of §4.3, chosen by the all-starts 3-round criterion (§13).
+- **P8** (v0.4, D-028) File magic `"KCI\x02"` = format 2 = KCI-20 v0.4; `kci dec` refuses format 1 (v0.3) files with a clear message.
 
-### File format v1 (CLI)
+### File format 2 (CLI; v1 layout, magic bumped in v0.4)
 ```
 offset size  field
-0      4     magic "KCI\x01"
+0      4     magic "KCI\x02"   (format 2; "KCI\x01" was KCI-20 v0.3 and is refused)
 4      1     mode       0 = AEAD, 1 = raw
 5      1     kdf id     0 = raw key (no KDF), 1 = PBKDF2-HMAC-SHA256
 6      2     reserved   0
@@ -233,8 +241,11 @@ end-16 16    tag        (AEAD only)
 In AEAD mode the 40-byte header is the AAD, so changing any header field makes decryption fail.
 
 ## 11. Verified so far (Session 02, 2026-11-27)
-**v0.3 (implemented in C):** see [[Test-Vector-Strategy]]. Now 1336 library checks and 69 CLI checks, cross-checked against the
-Python reference, and passing in CI on Linux x86-64 (gcc, clang), Linux ARM64, macOS ARM64 and 32-bit x86. The values below are from the design stage (v0.2) and are unchanged by v0.3: the AEAD-domain block and the deck did not change.
+**v0.4 (implemented in C):** see [[Test-Vector-Strategy]]. 1336 library checks and 71 CLI checks, cross-checked against the
+Python reference; v0.3 passed in CI on Linux x86-64 (gcc, clang), Linux ARM64, macOS ARM64 and 32-bit x86. **The values below are from the
+design stage (v0.2/v0.3 table) and are history:** v0.4 changes every deck and block. The v0.4 block for key `00..1f`, nonce `000000090000004a00000000`,
+counter 1 (deck `[0,3,5,6,6,4,6,7,3,7,4,5,2,4,2,4,3,7,4,6]`) is
+`40b9da6580f402a175df9b60394cab46d57e073c98252ad92b2df9962a6ca139a5ab360260272181fa5c66e6dad33d7457f2a7d3d9b5acce32bb89c80bf35d0d` (C, Python and `kci selftest` agree).
 
 **Correctness and diffusion** (`python3 -I tools/kci_ref.py`):
 - **Kernel cross-check:** with ChaCha rotations in every round, round constants off and ChaCha constants, the data-driven kernel reproduces
@@ -275,7 +286,7 @@ confirms the prototype. See [[Performance-Notes]].
 
 ## 12. Improvement roadmap (carry forward, don't abandon)
 Status 2026-11-27: first empirical pass done for items 1–3 (single-bit differentials, deck and related-key statistics), see [[Cryptanalysis-Notes]].
-Result: every loop and deck is clean after 4 rounds, like ChaCha; 58 of the 512 three-loop starts have a weaker 3-round bias than ChaCha (worst 3.4×) → v0.4 draft (§13); no weak decks or related-key structure found.
+Result: every loop and deck is clean after 4 rounds, like ChaCha; 58 of the 512 three-loop starts have a weaker 3-round bias than ChaCha (worst 3.4×) → fixed in v0.4 (§13); no weak decks or related-key structure found.
 1. **Differential and linear trail bounds** for each of the 8 rotation sets, and for the worst decks (one loop repeated 20 times,
    alternating pairs). Use a SAT/MILP model like those published for ChaCha. Replace any set that comes out weak, or raise the round count.
    _Empirical part done; SAT/MILP bounds still open (no solver installed)._
@@ -285,8 +296,8 @@ Result: every loop and deck is clean after 4 rounds, like ChaCha; 58 of the 512 
 4. PractRand / TestU01 on the keystream across many keys; reduced-round (2–8) distinguisher search.
 5. Revisit per-block decks (§9) and KCI-X once the analysis tooling exists.
 
-## 13. v0.4 DRAFT: retuned loop rotation sets (Q20, awaiting owner sign-off)
-**Not implemented.** The C code, KATs and file format stay at v0.3 until the owner signs off P7–P8. Evidence and method:
+## 13. v0.4: retuned loop rotation sets (Q20; signed off 2026-11-27 as P7/P8 → D-027/D-028; implemented)
+This section keeps the case for the change as it was put to the owner. Evidence and method:
 [[Cryptanalysis-Notes]] and `tools/analysis/kci_rotsearch.c`.
 
 **Why.** The 3-round single-bit differential bias, the usual starting point of reduced-round attacks on ChaCha-like designs (PNB attacks), is
@@ -297,7 +308,7 @@ problem is how loops combine, not just loops 0 and 4. All schedules are still cl
 **What changes.** Only the rotation amounts of six loops. Everything else stays as in v0.3: the principle that the key chooses the loops (D-016), 8 loops, the
 ρ1/ρ3 byte-rotation rule, the loop round constants `packed[s]` and their 2023 heritage, the deck derivation, 20 rounds, the modes and the KDF.
 
-| Loop s | v0.3 (ρ1, ρ2, ρ3, ρ4) | **v0.4 draft** | Source |
+| Loop s | v0.3 (ρ1, ρ2, ρ3, ρ4) | **v0.4** | Source |
 |---|---|---|---|
 | 0 | 24, 4, 8, 13 | **16, 3, 24, 27** | search candidate 2 |
 | 1 | 8, 11, 16, 25 | 8, 11, 16, 25 | kept |
@@ -316,7 +327,7 @@ for estimation noise (`search 14 1.10`) kept no more v0.3 sets and gave a worse 
 
 **Measured (N = 2¹⁶, independent of the search's own estimates):**
 
-| | v0.3 | v0.4 draft | ChaCha |
+| | v0.3 | v0.4 | ChaCha |
 |---|---|---|---|
 | starts weaker than ChaCha (of 512) | 58 | 2 (at 1.02×, within the measurement noise) | — |
 | worst 3-round start, max \|eps\| | 0.683 (3.4×) | 0.208 (1.02×) | 0.203 |
@@ -324,13 +335,16 @@ for estimation noise (`search 14 1.10`) kept no more v0.3 sets and gave a worse 
 | 4 rounds, each loop repeated 20 times | clean | clean | clean |
 
 **Costs and caveats.**
-- Speed should not change: ρ1/ρ3 are still byte rotations, so the AVX2 byte-shuffle path and the portable code run the same instructions. To be measured after implementing.
+- Speed: unchanged within noise, as expected (ρ1/ρ3 are still byte rotations). Measured: raw stream AVX2 2 673–2 722 MB/s (v0.3 2 728–2 738), portable 315–317 (v0.3 304–317), AEAD 1 227–1 233 MB/s (v0.3 1 237–1 250), same machine, alternating runs.
 - Loops 7 and 3 now have ρ4 = 1 and 2. Those are allowed by §4.3 and pass the filter, but very small rotations spread bits slowly, so they should be watched in the trail-bound work (Q21).
 - The criterion is one statistic: single-bit, forward, 3 rounds. It does not cover multi-bit or linear trails, or the backward direction from the output that PNB
   attacks also use. The SAT/MILP bounds (§12 item 1, Q21 approved) are the next check of this table.
 - Changing the table changes every deck (the setup block uses it), so every KAT changes and v0.3 files cannot be decrypted by v0.4.
 
-**For sign-off:**
+**Confirmed on the implemented v0.4** (`kci_diffbias 18`, `kci_deckstats 22`, raw output `vault/Security/results/v04-*.txt`): worst of 400 random decks
+at 3 rounds 0.201 (v0.3: 0.654; ChaCha 0.197); every constant deck, alternating pair and random deck clean at 4 rounds; decks uniform, related-key decks independent.
+
+**Signed off (2026-11-27):**
 - **P7** Adopt the v0.4 rotation table above and the search criterion as its provenance (§4.3 is rewritten on adoption; `tools/kci_ref.py` `FROZEN` updated; KATs regenerated).
 - **P8** File format: bump the magic to `"KCI\x02"` for KCI-20 v0.4, so v0.4 tools refuse v0.3 files with a clear message instead of an authentication failure.
   The layout is unchanged. Alternative: keep `"KCI\x01"`, since no real v0.3 files are expected to exist (experimental cipher).

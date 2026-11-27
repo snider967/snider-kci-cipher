@@ -1,8 +1,9 @@
-"""KCI-20 reference sketch, spec v0.3 (see vault/Refactor/KCI-Primitive-Design.md).
+"""KCI-20 reference sketch, spec v0.4 (see vault/Refactor/KCI-Primitive-Design.md).
 
 Spec check only. KATs come from the portable C path. Experimental, unreviewed cipher.
 Run:  python3 -I tools/kci_ref.py          (checks + provisional KAT)
-      python3 -I tools/kci_ref.py --search (re-derive the 8 loop rotation sets; slow, ~1 min)
+      python3 -I tools/kci_ref.py --search (re-derive the v0.3 loop rotation sets, kept as history; slow, ~1 min)
+The v0.4 rotation table (FROZEN) comes from tools/analysis/kci_rotsearch.c (spec section 4.3, D-027).
 """
 import os, random, struct, sys
 
@@ -15,10 +16,10 @@ VEC = [(0,5,2,3,5,2,2), (1,10,10,0,10,6,4), (1,9,6,3,9,5,4), (1,7,7,0,8,5,3),
 PACKED = [sum(x << (4 * i) for i, x in enumerate(v)) for v in VEC]
 PHI = 0x9E3779B9
 
-# Rotation sets per loop: LOOP_ROT = FROZEN below (output of search_rotations(); rho1, rho3 in {8,16,24})
+# Rotation sets per loop: LOOP_ROT = FROZEN below (v0.4: output of tools/analysis/kci_rotsearch.c; rho1, rho3 in {8,16,24})
 
 STACK_CONST = struct.unpack('<4I', b'KCI 256-bit loop')   # AEAD mode: MAC key block + message keystream
-RAW_CONST   = struct.unpack('<4I', b'KCI 256-bit raw!')   # raw mode keystream (spec v0.3 domain separation, D-024)
+RAW_CONST   = struct.unpack('<4I', b'KCI 256-bit raw!')   # raw mode keystream (domain separation since v0.3, D-024)
 DECK_CONST  = struct.unpack('<4I', b'KCI shuffle deck')   # key setup (domain separation)
 CHACHA_CONST = struct.unpack('<4I', b'expand 32-byte k')  # cross-check build only
 SETUP_SCHED = [r % 8 for r in range(20)]                  # fixed public schedule used only to shuffle the deck
@@ -118,14 +119,18 @@ def search_rotations():
         sets.append(p)
     return sets
 
-FROZEN = [(24, 4, 8, 13), (8, 11, 16, 25), (8, 5, 16, 10), (16, 3, 24, 31),
-          (8, 29, 24, 10), (24, 25, 16, 18), (16, 21, 24, 30), (8, 22, 16, 27)]
+# v0.3 table: output of search_rotations() above (weak 3-round starts, replaced in v0.4)
+FROZEN_V03 = [(24, 4, 8, 13), (8, 11, 16, 25), (8, 5, 16, 10), (16, 3, 24, 31),
+              (8, 29, 24, 10), (24, 25, 16, 18), (16, 21, 24, 30), (8, 22, 16, 27)]
+# v0.4 table (D-027): every 3-loop deck start no weaker than ChaCha at 3 rounds; loops 1 and 2 kept from v0.3
+FROZEN = [(16, 3, 24, 27), (8, 11, 16, 25), (8, 5, 16, 10), (8, 13, 16, 2),
+          (8, 14, 24, 17), (8, 3, 16, 14), (8, 4, 16, 25), (8, 12, 16, 1)]
 LOOP_ROT = FROZEN
 
 if __name__ == '__main__':
     if '--search' in sys.argv:
         found = search_rotations()
-        print('search result:', found, '| matches frozen table:', found == FROZEN)
+        print('search result:', found, '| matches the v0.3 table:', found == FROZEN_V03)
         sys.exit(0)
     hw = lambda b: bin(int.from_bytes(b, 'big')).count('1')
     key = bytes(range(32)); nonce = bytes.fromhex('000000090000004a00000000')

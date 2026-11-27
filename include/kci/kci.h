@@ -1,6 +1,6 @@
 /*
  * KCI-20: an experimental stream cipher whose key chooses the Krark-Clan Ironworks loops it plays.
- * Spec: vault/Refactor/KCI-Primitive-Design.md (v0.3).
+ * Spec: vault/Refactor/KCI-Primitive-Design.md (v0.4).
  *
  * WARNING: original, unreviewed cryptography. For research and fun; do not protect real data with it.
  *

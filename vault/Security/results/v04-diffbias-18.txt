@@ -1,0 +1,59 @@
+# KCI-20 single-bit differential bias, N = 2^18 samples per input bit, threshold 0.0117
+
+## 1. Baseline: ChaCha rotations and constants, no round constants
+chacha                 r=2  max|eps|=1.0000 BIASED  (in w12.b00 -> out w00.b17)  significant pairs=54298
+chacha                 r=3  max|eps|=0.1973 BIASED  (in w12.b21 -> out w02.b00)  significant pairs=3789
+chacha                 r=4  max|eps|=0.0096 random  (in w13.b23 -> out w12.b30)  significant pairs=0
+chacha                 r=5  max|eps|=0.0090 random  (in w12.b25 -> out w01.b20)  significant pairs=0
+
+## 2. Constant decks (one loop for all 20 rounds)
+loop 0 x20 {16,3,24,27} r=2  max|eps|=1.0000 BIASED  (in w12.b11 -> out w02.b22)  significant pairs=52242
+loop 0 x20 {16,3,24,27} r=3  max|eps|=0.2026 BIASED  (in w14.b15 -> out w01.b00)  significant pairs=1730
+loop 0 x20 {16,3,24,27} r=4  max|eps|=0.0096 random  (in w15.b11 -> out w00.b21)  significant pairs=0
+loop 0 x20 {16,3,24,27} r=5  max|eps|=0.0087 random  (in w14.b07 -> out w10.b00)  significant pairs=0
+loop 1 x20 {8,11,16,25} r=2  max|eps|=1.0000 BIASED  (in w12.b01 -> out w00.b07)  significant pairs=52379
+loop 1 x20 {8,11,16,25} r=3  max|eps|=0.1269 BIASED  (in w13.b13 -> out w03.b12)  significant pairs=681
+loop 1 x20 {8,11,16,25} r=4  max|eps|=0.0090 random  (in w15.b23 -> out w13.b23)  significant pairs=0
+loop 1 x20 {8,11,16,25} r=5  max|eps|=0.0088 random  (in w14.b19 -> out w06.b02)  significant pairs=0
+loop 2 x20 {8,5,16,10} r=2  max|eps|=1.0000 BIASED  (in w12.b01 -> out w01.b05)  significant pairs=52440
+loop 2 x20 {8,5,16,10} r=3  max|eps|=0.0545 BIASED  (in w12.b23 -> out w02.b14)  significant pairs=489
+loop 2 x20 {8,5,16,10} r=4  max|eps|=0.0085 random  (in w15.b07 -> out w04.b05)  significant pairs=0
+loop 2 x20 {8,5,16,10} r=5  max|eps|=0.0088 random  (in w14.b26 -> out w00.b07)  significant pairs=0
+loop 3 x20 {8,13,16,2} r=2  max|eps|=1.0000 BIASED  (in w12.b09 -> out w00.b19)  significant pairs=52917
+loop 3 x20 {8,13,16,2} r=3  max|eps|=0.0653 BIASED  (in w14.b23 -> out w03.b14)  significant pairs=774
+loop 3 x20 {8,13,16,2} r=4  max|eps|=0.0080 random  (in w15.b28 -> out w05.b05)  significant pairs=0
+loop 3 x20 {8,13,16,2} r=5  max|eps|=0.0095 random  (in w13.b24 -> out w08.b18)  significant pairs=0
+loop 4 x20 {8,14,24,17} r=2  max|eps|=1.0000 BIASED  (in w12.b07 -> out w00.b18)  significant pairs=53213
+loop 4 x20 {8,14,24,17} r=3  max|eps|=0.1306 BIASED  (in w15.b23 -> out w01.b18)  significant pairs=1795
+loop 4 x20 {8,14,24,17} r=4  max|eps|=0.0089 random  (in w15.b19 -> out w11.b28)  significant pairs=0
+loop 4 x20 {8,14,24,17} r=5  max|eps|=0.0100 random  (in w12.b18 -> out w10.b21)  significant pairs=0
+loop 5 x20 {8,3,16,14} r=2  max|eps|=1.0000 BIASED  (in w12.b00 -> out w01.b00)  significant pairs=52464
+loop 5 x20 {8,3,16,14} r=3  max|eps|=0.0818 BIASED  (in w15.b20 -> out w00.b00)  significant pairs=816
+loop 5 x20 {8,3,16,14} r=4  max|eps|=0.0090 random  (in w12.b26 -> out w00.b12)  significant pairs=0
+loop 5 x20 {8,3,16,14} r=5  max|eps|=0.0092 random  (in w12.b18 -> out w10.b31)  significant pairs=0
+loop 6 x20 {8,4,16,25} r=2  max|eps|=1.0000 BIASED  (in w12.b01 -> out w01.b02)  significant pairs=53577
+loop 6 x20 {8,4,16,25} r=3  max|eps|=0.1341 BIASED  (in w14.b27 -> out w00.b00)  significant pairs=1516
+loop 6 x20 {8,4,16,25} r=4  max|eps|=0.0092 random  (in w12.b02 -> out w09.b29)  significant pairs=0
+loop 6 x20 {8,4,16,25} r=5  max|eps|=0.0093 random  (in w13.b19 -> out w10.b19)  significant pairs=0
+loop 7 x20 {8,12,16,1} r=2  max|eps|=1.0000 BIASED  (in w12.b10 -> out w00.b18)  significant pairs=53835
+loop 7 x20 {8,12,16,1} r=3  max|eps|=0.1424 BIASED  (in w13.b23 -> out w03.b20)  significant pairs=1546
+loop 7 x20 {8,12,16,1} r=4  max|eps|=0.0081 random  (in w12.b10 -> out w12.b21)  significant pairs=0
+loop 7 x20 {8,12,16,1} r=5  max|eps|=0.0081 random  (in w14.b11 -> out w12.b15)  significant pairs=0
+
+## 3. Alternating pairs (s, t, s, t, ...): rounds until clean, screening subset of 16 input bits
+  s=0: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:4 t7:4
+  s=1: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:4 t7:4
+  s=2: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:3 t7:4
+  s=3: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:4 t7:4
+  s=4: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:4 t7:4
+  s=5: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:3 t7:4
+  s=6: t0:4 t1:4 t2:4 t3:4 t4:4 t5:3 t6:4 t7:4
+  s=7: t0:4 t1:4 t2:4 t3:4 t4:4 t5:4 t6:4 t7:4
+  worst alternating pair is clean from round 4
+
+## 4. Random decks from random keys (real key setup): rounds until clean, screening subset
+  400 decks; first clean round histogram:  r3: 46  r4: 354
+  worst deck (bias 0.1771 in round 3 on the screening subset): 4 2 0 4 0 0 6 0 3 2 4 4 3 2 3 7 5 3 6 2
+worst random deck      r=3  max|eps|=0.2011 BIASED  (in w15.b04 -> out w01.b04)  significant pairs=552
+worst random deck      r=4  max|eps|=0.0085 random  (in w15.b30 -> out w08.b25)  significant pairs=0
+worst random deck      r=5  max|eps|=0.0083 random  (in w15.b04 -> out w11.b20)  significant pairs=0

@@ -4,16 +4,17 @@
  * Copyright 2026 snider967. Licensed under the Apache License, Version 2.0. */
 #include "kci_internal.h"
 
-/* Loop rotation sets (rho1, rho2, rho3, rho4); rho1, rho3 in {8,16,24}. Spec 4.3, D-018. */
+/* Loop rotation sets (rho1, rho2, rho3, rho4); rho1, rho3 in {8,16,24}. Spec v0.4 section 4.3, D-018, D-027.
+ * v0.4: chosen by tools/analysis/kci_rotsearch.c so that every 3-loop deck start is no weaker than ChaCha at 3 rounds. */
 const uint8_t kci_loop_rot[KCI_LOOPS][4] = {
-    {24,  4,  8, 13},   /* 0: KCI, Trawler, Myr x2, Mox Opal */
-    { 8, 11, 16, 25},   /* 1: KCI, Trawler, Spine, Mind Stone, Chromatic Star, Mox */
-    { 8,  5, 16, 10},   /* 2: KCI, Trawler, Myr, Chromatic Star x2, Mox */
-    {16,  3, 24, 31},   /* 3: KCI, Trawler, Myr, Chromatic Star, Mox */
-    { 8, 29, 24, 10},   /* 4: KCI, Trawler x2, Myr, Mox */
-    {24, 25, 16, 18},   /* 5: KCI, Trawler x2, Spine, Ichor Wellspring, Mox x2 */
-    {16, 21, 24, 30},   /* 6: KCI, Trawler, Myr, Chromatic Sphere x2, Mox */
-    { 8, 22, 16, 27},   /* 7: KCI, Trawler, Myr, Pyrite Spellbomb, Mox */
+    {16,  3, 24, 27},   /* 0: KCI, Trawler, Myr x2, Mox Opal */
+    { 8, 11, 16, 25},   /* 1: KCI, Trawler, Spine, Mind Stone, Chromatic Star, Mox  (kept from v0.3) */
+    { 8,  5, 16, 10},   /* 2: KCI, Trawler, Myr, Chromatic Star x2, Mox             (kept from v0.3) */
+    { 8, 13, 16,  2},   /* 3: KCI, Trawler, Myr, Chromatic Star, Mox */
+    { 8, 14, 24, 17},   /* 4: KCI, Trawler x2, Myr, Mox */
+    { 8,  3, 16, 14},   /* 5: KCI, Trawler x2, Spine, Ichor Wellspring, Mox x2 */
+    { 8,  4, 16, 25},   /* 6: KCI, Trawler, Myr, Chromatic Sphere x2, Mox */
+    { 8, 12, 16,  1},   /* 7: KCI, Trawler, Myr, Pyrite Spellbomb, Mox */
 };
 
 /* packed[s] = cd | mpil<<4 | msil<<8 | nmp<<12 | gat<<16 | tos<<20 | sos<<24 (vault: KCI-Loop-Model) */

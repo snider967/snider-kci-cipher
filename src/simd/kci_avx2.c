@@ -1,4 +1,4 @@
-/* AVX2 path: 8 KCI-20 blocks at once (spec v0.3 sections 4 and 11, layout from bench/prototype/avx2_rot.c).
+/* AVX2 path: 8 KCI-20 blocks at once (spec v0.4 sections 4 and 11, layout from bench/prototype/avx2_rot.c).
  * One register per state word; lane j holds block (ctr + j).
  *   d rotations (rho1, rho3 in {8,16,24}): one byte shuffle, mask picked per round in constant time.
  *   b rotations (rho2, rho4): vpsllvd / vpsrlvd with broadcast counts.

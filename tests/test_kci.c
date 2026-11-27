@@ -1,4 +1,4 @@
-/* KCI-20 unit tests and known-answer tests (spec v0.3).
+/* KCI-20 unit tests and known-answer tests (spec v0.4).
  * Copyright 2026 snider967. Licensed under the Apache License, Version 2.0. */
 #include <stdio.h>
 #include <string.h>
