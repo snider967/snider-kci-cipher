@@ -59,6 +59,7 @@ Not tested: the interactive password prompt (no terminal in the test run); the W
 (`-DKCI_NO_SIMD -DKCI_NO_INT128`) on Linux x86-64 gcc and clang (AVX2 path, 1336 checks), Linux ARM64 gcc and macOS ARM64 clang
 (portable path, 1312 checks), plus gcc `-m32` (1334 checks, AVX2 path on i386) and the CMake build with ctest and the CLI tests. All 69 CLI checks pass
 everywhere. Not covered: Windows/MSVC, big-endian, MCUs.
+v0.4 on `main` (CI run 46059631082): the same matrix passes with 1336 / 1312 / 1334 library checks and 71 CLI checks in every job.
 
 **Spec v0.4 (D-027, D-028):** all KATs regenerated from the Python reference with the new table (`tools/gen_vectors.py`); `kci selftest` uses the new
 key-`00..1f` block. **1336 library + 71 CLI checks**: the two new CLI checks are that new files carry `KCI\x02` and that a format-1 (v0.3) file is refused with a

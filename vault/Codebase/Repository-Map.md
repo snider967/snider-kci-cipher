@@ -2,7 +2,7 @@
 
 Back to [[00-Index]]
 
-## Files on `main` (Session 02, 2026-11-27, after PRs #1 and #2)
+## Files on `main` (end of Session 02, 2026-11-27, after PRs #1–#5)
 | Path | Purpose |
 |---|---|
 | `legacy/python/snider_kci_cipher.py`, `legacy/python/kci_cipher_v2_lite.py` | the 2023 Python (moved here, Q8) |

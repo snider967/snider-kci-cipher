@@ -3,10 +3,10 @@
 > Knowledge base for the **Python → C refactor** of `snider-kci-cipher`.
 > Obsidian-compatible (double-bracket wikilinks). Keep this index current whenever a note is added/renamed.
 
-**Status:** Phase 2: spec **v0.4** implemented (draft PR #4, implementation PR #5; v0.3 merged in PR #1); CI on 5 platforms (PR #2, $0 hard rule D-025). AVX2 keystream 3.1 GB/s, AEAD 1.27 GB/s; 1336 library + 69 CLI checks. Security analysis (PR #3) led to v0.4: every deck start now no weaker than ChaCha at 3 rounds. Next: SAT/MILP trail bounds (Q21 approved, D-026).
-**Branch:** work on topic branches, PRs into `main` (D-011). `c-refactor` (PR #1) and `ci-workflow` (PR #2) are merged.
+**Status:** Phase 2: spec **v0.4** on `main` (PRs #4, #5; v0.3 was PR #1); CI on 5 platforms (PR #2, $0 hard rule D-025). AVX2 keystream 3.1 GB/s, AEAD 1.27 GB/s; 1336 library + 69 CLI checks. Security analysis (PR #3) led to v0.4: every deck start now no weaker than ChaCha at 3 rounds. Next: SAT/MILP trail bounds (Q21 approved, D-026).
+**Branch:** work on topic branches, PRs into `main` (D-011). PRs #1–#5 are merged and their branches deleted.
 **Last updated:** 2026-11-27 (Session 02)
-**Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `f18a141`; the 2023 Python HEAD was `2a837a4`)
+**Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `235cf8d` at the end of Session 02; the 2023 Python HEAD was `2a837a4`)
 
 ## Start here
 - [[Project-Overview]] — what the project is and why we are refactoring
