@@ -178,7 +178,7 @@ This is the RFC 8439 composition with KCI-20 in place of ChaCha20:
 2. Encrypt as in §5 (counter from 1).
 3. `tag = Poly1305(otk, AAD ‖ pad16 ‖ CT ‖ pad16 ‖ LE64(len AAD) ‖ LE64(len CT))`.
 4. Decrypt: recompute the tag, compare in **constant time**, and release plaintext only if it matches.
-- Poly1305 uses a 32-bit-limb implementation (portable, MCU-friendly) and is checked against the RFC 8439 Poly1305 vectors on its own.
+- Poly1305 uses 44-bit limbs where `unsigned __int128` exists and 26-bit limbs elsewhere (portable, MCU-friendly); both are checked against the RFC 8439 Poly1305 vectors and OpenSSL.
 - Why Poly1305 and not HMAC-SHA256: it is several times faster (performance is the project goal), and the composition is the
   standard, analysed one. Its security rests on the keystream being unpredictable, which is exactly what KCI-20 has to deliver.
 
@@ -233,8 +233,8 @@ end-16 16    tag        (AEAD only)
 In AEAD mode the 40-byte header is the AAD, so changing any header field makes decryption fail.
 
 ## 11. Verified so far (Session 02, 2026-11-27)
-**v0.3 (implemented in C):** see [[Test-Vector-Strategy]]. As of v0.3: 1141 library checks and 67 CLI checks, all cross-checked against the
-Python reference. The values below are from the design stage (v0.2) and are unchanged by v0.3: the AEAD-domain block and the deck did not change.
+**v0.3 (implemented in C):** see [[Test-Vector-Strategy]]. Now 1336 library checks and 69 CLI checks, cross-checked against the
+Python reference, and passing in CI on Linux x86-64 (gcc, clang), Linux ARM64, macOS ARM64 and 32-bit x86. The values below are from the design stage (v0.2) and are unchanged by v0.3: the AEAD-domain block and the deck did not change.
 
 **Correctness and diffusion** (`python3 -I tools/kci_ref.py`):
 - **Kernel cross-check:** with ChaCha rotations in every round, round constants off and ChaCha constants, the data-driven kernel reproduces
@@ -266,7 +266,7 @@ Python reference. The values below are from the design stage (v0.2) and are unch
 | Scalar x86 fallback (`rol r32, cl`) | about 583–635 MB/s | about 375–386 MB/s | 1.55–1.65× |
 
 The x86 scalar slowdown matters little in practice, because every x86-64 CPU has SSE2 and almost all have SSSE3/AVX2. On ARM, scalar
-`ROR` by a register takes 1 cycle, so the scalar cost there should be small. That is **unmeasured**: no ARM toolchain or qemu yet.
+`ROR` by a register takes 1 cycle, so the scalar cost there should be small. ARM64 **correctness** is verified in CI; ARM **speed** is still unmeasured.
 
 **Real implementation (later in Session 02):** the C AVX2 path runs the raw stream at **3 077 MB/s**, against 311 MB/s portable, which
 confirms the prototype. See [[Performance-Notes]].

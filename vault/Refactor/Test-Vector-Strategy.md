@@ -10,7 +10,7 @@ the RFC 8439 §2.3.2 block, a 300-byte ChaCha-mode keystream checked against Ope
 6 block KATs with their decks (including counters 0, 2³¹−1 and 2³²−1), 8 single-loop schedules, reduced rounds 1–8, a 300-byte
 stream KAT with chunked in-place decryption, the counter limit, and the wipe.
 Vectors come from the independent Python sketch, so they are **cross-implementation** checks, not self-generated.
-Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS, dudect timing.
+Not yet at that point: 32-bit, ARM, macOS (all now covered by CI, see below); still not: Windows, dudect timing.
 
 **Poly1305 + AEAD (Session 02, later):** `make test` = **687 checks**.
 - Poly1305: RFC 8439 §2.5.2, plus 140 edge vectors (5 keys including max-clamped r and s = all ones, lengths 0–256 around every
@@ -54,6 +54,11 @@ and that a raw file relabelled as AEAD fails authentication. The C ↔ Python ra
 - **Cross-implementation:** C enc → Python dec and Python enc → C dec (key, password, raw) with `tools/kci_file.py`, built only on
   `tools/kci_ref.py` and `hashlib`.
 Not tested: the interactive password prompt (no terminal in the test run); the Windows code paths.
+
+**CI (PR #2, D-025):** every push to `main` and every PR runs `make test`, `make sanitize` and the portable build
+(`-DKCI_NO_SIMD -DKCI_NO_INT128`) on Linux x86-64 gcc and clang (AVX2 path, 1336 checks), Linux ARM64 gcc and macOS ARM64 clang
+(portable path, 1312 checks), plus gcc `-m32` (1334 checks, AVX2 path on i386) and the CMake build with ctest and the CLI tests. All 69 CLI checks pass
+everywhere. Not covered: Windows/MSVC, big-endian, MCUs.
 
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
