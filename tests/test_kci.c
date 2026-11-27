@@ -278,6 +278,66 @@ static void test_aead_limit_and_ctcmp(void) {
     CHECK(kci_ct_memcmp(x, x, 5) == 0 && kci_ct_memcmp(x, y, 5) == -1 && kci_ct_memcmp(x, y, 0) == 0, "kci_ct_memcmp");
 }
 
+static void test_sha256(void) {
+    uint8_t md[32];
+    kci_sha256(md, (const uint8_t *)"abc", 3);
+    CHECK(memcmp(md, kat_sha_abc, 32) == 0, "SHA-256 FIPS 180-4 \"abc\"");
+    kci_sha256(md, (const uint8_t *)"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 56);
+    CHECK(memcmp(md, kat_sha_448, 32) == 0, "SHA-256 FIPS 180-4 448-bit message");
+
+    kci_sha256_state st;                      /* one million 'a', fed in 1000-byte pieces */
+    uint8_t a[1000]; memset(a, 'a', sizeof a);
+    kci_sha256_init(&st);
+    for (int i = 0; i < 1000; i++) kci_sha256_update(&st, a, sizeof a);
+    kci_sha256_final(&st, md);
+    CHECK(memcmp(md, kat_sha_million_a, 32) == 0, "SHA-256 FIPS 180-4 one million 'a'");
+
+    static const size_t splits[] = { 1, 63, 2, 64, 17 };
+    for (size_t i = 0; i < sizeof kat_shas / sizeof kat_shas[0]; i++) {
+        const struct kat_sha *v = &kat_shas[i];
+        kci_sha256(md, kat_sha_pool, v->len);
+        CHECK(memcmp(md, v->md, 32) == 0, "SHA-256 one-shot len %u", v->len);
+        size_t pos = 0, c = 0;
+        kci_sha256_init(&st);
+        while (pos < v->len) {
+            size_t n = splits[c++ % 5];
+            if (n > (size_t)v->len - pos) n = (size_t)v->len - pos;
+            kci_sha256_update(&st, kat_sha_pool + pos, n);
+            pos += n;
+        }
+        kci_sha256_final(&st, md);
+        CHECK(memcmp(md, v->md, 32) == 0, "SHA-256 streamed len %u", v->len);
+    }
+}
+
+static void test_hmac_sha256(void) {
+    uint8_t mac[32];
+    for (size_t i = 0; i < sizeof kat_hmacs / sizeof kat_hmacs[0]; i++) {
+        const struct kat_hmac *v = &kat_hmacs[i];
+        kci_hmac_sha256(mac, v->key, v->key_len, v->msg, v->msg_len);
+        CHECK(memcmp(mac, v->mac, 32) == 0, "HMAC-SHA256 vector %zu (key %u bytes)", i, v->key_len);
+    }
+}
+
+static void test_pbkdf2(void) {
+    uint8_t dk[97];
+    for (size_t i = 0; i < sizeof kat_pbkdf2s / sizeof kat_pbkdf2s[0]; i++) {
+        const struct kat_pbkdf2 *v = &kat_pbkdf2s[i];
+        kci_pbkdf2_hmac_sha256(dk, v->dk_len, v->pw, v->pw_len, v->salt, v->salt_len, v->iter);
+        CHECK(memcmp(dk, v->dk, v->dk_len) == 0, "PBKDF2 vector %zu (c = %u, dkLen = %u)", i, (unsigned)v->iter, v->dk_len);
+    }
+}
+
+static void test_kdf_password(void) {
+    uint8_t key[32] = {0};
+    CHECK(kci_kdf_password(key, kat_kdf_pw, sizeof kat_kdf_pw, kat_kdf_salt, 16, KCI_KDF_DEFAULT_ITERATIONS) == KCI_OK &&
+          memcmp(key, kat_kdf_key_default, 32) == 0, "kci_kdf_password at the default 600 000 iterations");
+    CHECK(kci_kdf_password(key, kat_kdf_pw, sizeof kat_kdf_pw, kat_kdf_salt, 16, KCI_KDF_MIN_ITERATIONS - 1) == KCI_ERR_PARAM,
+          "too few iterations must be refused");
+    CHECK(kci_kdf_password(key, kat_kdf_pw, sizeof kat_kdf_pw, kat_kdf_salt, 15, KCI_KDF_DEFAULT_ITERATIONS) == KCI_ERR_PARAM,
+          "short salt must be refused");
+}
+
 static void test_wipe(void) {
     kci_key k;
     kci_key_setup(&k, kat_stream_key);
@@ -301,6 +361,10 @@ int main(void) {
     test_aead_kats();
     test_aead_tamper();
     test_aead_limit_and_ctcmp();
+    test_sha256();
+    test_hmac_sha256();
+    test_pbkdf2();
+    test_kdf_password();
     test_wipe();
     printf("%s: %d checks, %d failures\n", failures ? "FAILED" : "OK", checks, failures);
     return failures ? 1 : 0;

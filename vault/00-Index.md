@@ -3,7 +3,7 @@
 > Knowledge base for the **Python → C refactor** of `snider-kci-cipher`.
 > Obsidian-compatible (double-bracket wikilinks). Keep this index current whenever a note is added/renamed.
 
-**Status:** Phase 2 in progress: core block, deck, raw stream, **Poly1305 and AEAD** done (687 checks pass). Next: SHA-256/PBKDF2, then the CLI.
+**Status:** Phase 2 in progress: library core complete (block, deck, raw stream, Poly1305, AEAD, SHA-256/HMAC/PBKDF2; 983 checks pass). Next: the CLI with file format v1.
 **Branch:** `c-refactor` (PRs into `main`, see D-011)
 **Last updated:** 2026-11-27 (Session 02)
 **Upstream:** https://github.com/snider967/snider-kci-cipher (branch `main`, HEAD `2a837a4`)

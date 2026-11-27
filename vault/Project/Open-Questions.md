@@ -23,7 +23,7 @@ Status key: 🔴 open · 🟡 provisional default in use · 🟢 answered
 ## Still open
 | # | Question | Status | Notes / default |
 |---|---|---|---|
-| Q6 | SHA-256 / hash: in-house or a library? | 🟡 | Default: in-house, no dependencies (needed for microcontrollers). |
+| Q6 | SHA-256 / hash: in-house or a library? | 🟡 | Default **applied** (Session 02): in-house `kci_sha256.c`. Owner did not object. |
 | Q7 | Build system? | 🟡 | Default **applied** (Session 02): Makefile (tested) + CMakeLists.txt (untested). Owner did not object. |
 | Q8 | Keep the Python files in the repo? | 🟡 | Default **applied** (Session 02): moved to `legacy/python/`. Owner did not object. |
 | Q11 | Decrypt from the key (not the keystream)? | 🟡 | With the redesign: yes, key + nonce. |

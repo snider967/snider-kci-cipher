@@ -23,6 +23,12 @@ Not yet: a 32-bit build (this machine has no `gcc-multilib`), ARM, Windows/macOS
   mutant survived. The survivor is the top-limb overflow carry in `final()`, which needs the accumulator near 2¹³¹ (r = 1) or
   odds of about 2⁻⁷⁸ (general r). It is believed unreachable in practice and kept because it is part of the standard algorithm.
 
+**SHA-256 / HMAC / PBKDF2 (Session 02, later):** `make test` = **983 checks** (oracle: Python `hashlib`; FIPS/RFC values asserted in the generator).
+- SHA-256: FIPS 180-4 "abc", the 448-bit message and one million 'a' (streamed), plus every length 0–129 and 191–193, 255–257 and 1000, one-shot and streamed.
+- HMAC-SHA256: RFC 4231 cases 1, 2, 3, 4, 6 and 7 (keys longer than a block), plus key lengths 0, 63, 64 and 65.
+- PBKDF2-HMAC-SHA256: RFC 7914 §11 #1 (c = 1) and #2 (c = 80 000), plus c = 2, 3, 5 and 4096, an empty password, a 100-byte password and a 97-byte output.
+  `kci_kdf_password` at 600 000 iterations is checked, and so are refusals below 100 000 iterations or below a 16-byte salt.
+
 ## Layers
 0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
    the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.

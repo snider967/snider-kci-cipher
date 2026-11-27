@@ -29,6 +29,13 @@ extern "C" {
 #define KCI_OK          0
 #define KCI_ERR_LIMIT  (-1)   /* request would run the 32-bit block counter past 2^32 - 1 */
 #define KCI_ERR_AUTH   (-2)   /* AEAD tag mismatch: ciphertext, AAD, nonce or key is wrong */
+#define KCI_ERR_PARAM  (-3)   /* parameter below a safety minimum (e.g. KDF iterations or salt length) */
+
+/* Password front end (spec 6, D-020): PBKDF2-HMAC-SHA256 */
+#define KCI_KDF_DEFAULT_ITERATIONS 600000u
+#define KCI_KDF_MIN_ITERATIONS     100000u
+#define KCI_KDF_SALT_BYTES         16     /* what the CLI generates */
+#define KCI_KDF_MIN_SALT_BYTES     16
 
 /* Expanded key: key words + the expanded deck (spec section 4.2). Treat as opaque; wipe with kci_key_wipe(). */
 typedef struct {
@@ -75,6 +82,11 @@ int kci_aead_decrypt(uint8_t *pt, const uint8_t *ct, size_t len,
                      const uint8_t tag[KCI_TAG_BYTES],
                      const uint8_t *aad, size_t aad_len,
                      const kci_key *k, const uint8_t nonce[KCI_NONCE_BYTES]);
+
+/* Password -> 32-byte key (then call kci_key_setup, which shuffles the deck).
+ * Returns KCI_ERR_PARAM if iterations < KCI_KDF_MIN_ITERATIONS or salt_len < KCI_KDF_MIN_SALT_BYTES. */
+int kci_kdf_password(uint8_t key[KCI_KEY_BYTES], const uint8_t *pw, size_t pw_len,
+                     const uint8_t *salt, size_t salt_len, uint32_t iterations);
 
 /* Constant-time comparison: 0 if equal, -1 otherwise. */
 int kci_ct_memcmp(const void *a, const void *b, size_t n);

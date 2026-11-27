@@ -46,6 +46,9 @@ Same machine, `gcc -O2`, `build/libkci.a`, 64 MiB of `kci_stream_xor`, best of 5
   round-constant target and the column/diagonal choice are fixed in the code (core 295 → 381); a full-block XOR fast path (stream 286 → 316).
   Interleaving the quarter-rounds step by step alone did not help in C.
 - AEAD encrypt (KCI-20 + Poly1305, 32 MiB, best of 5): **~256 MB/s** portable.
+- `kci_kdf_password` at 600 000 iterations: **0.52 s** (portable SHA-256, HMAC key state precomputed once). OpenSSL via `hashlib` does
+  the same work in 0.33 s with assembly. Every 1.6× the defender is slower than an attacker's optimised code is a 1.6× smaller effective cost.
+  A SHA-256 fast path (SHA-NI / ARMv8 SHA2 instructions) is a later option.
 
 ## Baseline numbers (Python)
 _Not measured yet._

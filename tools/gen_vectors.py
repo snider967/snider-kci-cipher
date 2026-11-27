@@ -5,7 +5,7 @@ The ChaCha-mode stream vector is also checked against OpenSSL's chacha20 when `o
 
 Run from the repo root:  python3 -I tools/gen_vectors.py
 """
-import os, random, shutil, struct, subprocess, sys
+import hashlib, hmac, os, random, shutil, struct, subprocess, sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
 import kci_ref as K  # noqa: E402
@@ -169,6 +169,57 @@ def main():
     w('/* plaintext = kat_pool_rn[0..len), aad = kat_pool_rn[256 - aad_len .. 256) */')
     w('static const struct kat_aead kat_aeads[] = {'); [w(r) for r in rows]; w('};')
     w(f'static const uint8_t kat_aead_cts[{max(len(cts),1)}] = {carr(cts or bytes(1))};\n')
+
+    # 8. SHA-256 / HMAC-SHA256 / PBKDF2-HMAC-SHA256, oracle = Python hashlib (+ FIPS / RFC values asserted)
+    fips = {b'': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            b'abc': 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+            b'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq':
+                '248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1'}
+    for m_, h_ in fips.items():
+        assert hashlib.sha256(m_).hexdigest() == h_, 'FIPS 180-4 mismatch'
+    assert hashlib.sha256(b'a' * 1000000).hexdigest() == 'cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0'
+    w('/* SHA-256 of kat_pool_rn[0..len) repeated to 1000 bytes; lengths cover every padding boundary */')
+    shapool = (pool_rn * 4)[:1000]
+    w(f'static const uint8_t kat_sha_pool[1000] = {carr(shapool)};')
+    lens = list(range(0, 130)) + [191, 192, 193, 255, 256, 257, 1000]
+    w('struct kat_sha { uint16_t len; uint8_t md[32]; };')
+    w('static const struct kat_sha kat_shas[] = {' + ','.join(f'{{{n},{carr(hashlib.sha256(shapool[:n]).digest())}}}' for n in lens) + '};')
+    w('static const uint8_t kat_sha_abc[32] = ' + carr(bytes.fromhex(fips[b'abc'])) + '; /* FIPS 180-4 */')
+    w('static const uint8_t kat_sha_448[32] = ' + carr(bytes.fromhex(fips[b'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'])) + '; /* FIPS 180-4 */')
+    w('static const uint8_t kat_sha_million_a[32] = ' + carr(hashlib.sha256(b'a' * 1000000).digest()) + '; /* FIPS 180-4 */\n')
+
+    hm = [(b'\x0b' * 20, b'Hi There'),
+          (b'Jefe', b'what do ya want for nothing?'),
+          (b'\xaa' * 20, b'\xdd' * 50),
+          (bytes(range(1, 26)), b'\xcd' * 50),
+          (b'\xaa' * 131, b'Test Using Larger Than Block-Size Key - Hash Key First'),
+          (b'\xaa' * 131, b'This is a test using a larger than block-size key and a larger than block-size data. '
+                          b'The key needs to be hashed before being used by the HMAC algorithm.'),
+          (b'', b'empty key'), (pool_rn[:63], b'k63'), (pool_rn[:64], b'k64'), (pool_rn[:65], b'k65')]
+    assert hmac.new(b'Jefe', b'what do ya want for nothing?', 'sha256').hexdigest() == \
+        '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843', 'RFC 4231 case 2 mismatch'
+    w('/* HMAC-SHA256: RFC 4231 cases 1, 2, 3, 4, 6, 7, then key lengths 0 / 63 / 64 / 65 */')
+    w('struct kat_hmac { uint8_t key[131]; uint8_t key_len; uint8_t msg[160]; uint8_t msg_len; uint8_t mac[32]; };')
+    w('static const struct kat_hmac kat_hmacs[] = {')
+    for k_, m_ in hm:
+        w(f'  {{ {carr(k_ or bytes(1))}, {len(k_)}, {carr(m_)}, {len(m_)}, {carr(hmac.new(k_, m_, "sha256").digest())} }},')
+    w('};\n')
+
+    pb = [(b'passwd', b'salt', 1, 64), (b'Password', b'NaCl', 80000, 64), (b'password', b'salt', 2, 32),
+          (b'password', b'salt', 4096, 40), (b'', b'salt', 3, 32), (pool_rn[:100], pool_rn[100:140], 5, 97)]
+    assert hashlib.pbkdf2_hmac('sha256', b'passwd', b'salt', 1, 64).hex().startswith('55ac046e56e3089fec1691c22544b605'), 'RFC 7914 #1'
+    assert hashlib.pbkdf2_hmac('sha256', b'Password', b'NaCl', 80000, 64).hex().startswith('4ddcd8f60b98be21830cee5ef22701f9'), 'RFC 7914 #2'
+    w('/* PBKDF2-HMAC-SHA256: RFC 7914 section 11 (#1, #2), then extra cases incl. a 100-byte password and a 97-byte output */')
+    w('struct kat_pbkdf2 { uint8_t pw[100]; uint8_t pw_len; uint8_t salt[40]; uint8_t salt_len; uint32_t iter; uint8_t dk_len; uint8_t dk[97]; };')
+    w('static const struct kat_pbkdf2 kat_pbkdf2s[] = {')
+    for pw_, sa_, it_, dl_ in pb:
+        dk_ = hashlib.pbkdf2_hmac('sha256', pw_, sa_, it_, dl_)
+        w(f'  {{ {carr(pw_ or bytes(1))}, {len(pw_)}, {carr(sa_)}, {len(sa_)}, {it_}u, {dl_}, {carr(dk_)} }},')
+    w('};')
+    kdf_pw = b'correct horse battery staple'; kdf_salt = bytes(range(16))
+    w(f'static const uint8_t kat_kdf_pw[{len(kdf_pw)}] = {carr(kdf_pw)};')
+    w(f'static const uint8_t kat_kdf_salt[16] = {carr(kdf_salt)};')
+    w(f'static const uint8_t kat_kdf_key_default[32] = {carr(hashlib.pbkdf2_hmac("sha256", kdf_pw, kdf_salt, 600000, 32))}; /* 600 000 iterations */\n')
 
     w('#endif')
     with open(OUT, 'w') as f:
