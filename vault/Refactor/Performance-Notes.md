@@ -22,5 +22,22 @@ Back to [[00-Index]]
 2. C: `bench/` with `clock_gettime` + optional `rdtsc`; report cycles/byte at 16 B, 1 KiB, 1 MiB, 100 MiB.
 3. Compare `__int128` vs portable u64 path on each target (Q5).
 
-## Baseline numbers
+## Key-selected loops: prototype measurements (Session 02, 2026-11-27)
+Intel i7-8700T, gcc 13.3. Sources: `bench/prototype/scalar_rot.c`, `bench/prototype/avx2_rot.c`, built with
+`gcc -O2 scalar_rot.c` / `gcc -O3 -march=native scalar_rot.c` and `gcc -O3 -mavx2 avx2_rot.c`. Best of 3 runs.
+
+| Path | Fixed rotations | Key-selected | Ratio |
+|---|---|---|---|
+| Scalar, `-O2` | 583 MB/s | 375 MB/s | 1.55× slower |
+| Scalar, `-O3 -march=native` | 635 MB/s | 386 MB/s | 1.65× slower |
+| AVX2 8-way, all 4 rotations variable (`vpsllvd`/`vpsrlvd`) | 3 075 MB/s | 2 600 MB/s | 1.18× slower |
+| AVX2 8-way, d rotations as key-selected byte shuffles + b rotations variable (**spec v0.2**) | 3 075–3 098 MB/s | 3 150–3 173 MB/s | 0.97–0.98× (no cost) |
+
+Lessons:
+- Shift-by-`xmm`-count (`vpslld ymm, ymm, xmm`) is 2 micro-ops on Intel. A first AVX2 attempt with it was 1.78× slower. Use `vpsllvd` with a broadcast count vector.
+- Scalar x86 `rol r32, cl` is the slow case. It matters only on the scalar fallback.
+- An earlier single-block benchmark at `-O3` reported 2.9 GB/s for scalar, because the compiler removed unused work. Benchmarks must consume the full output.
+- Unmeasured: SSE2/SSSE3 (shift by `xmm` count, so probably slower than AVX2), NEON, scalar ARM/MCU.
+
+## Baseline numbers (Python)
 _Not measured yet._

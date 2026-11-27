@@ -5,6 +5,10 @@ Back to [[00-Index]] · Related: [[KCI-Primitive-Design]], [[Porting-Map]]
 Updated 2026-11-27: after the redesign (D-007) the Python is **not** an oracle for the cipher output.
 
 ## Layers
+0. **Kernel cross-check (KCI-20 spec §11):** a test build that forces ChaCha rotations into every round, turns round constants off and uses ChaCha constants must reproduce
+   the RFC 8439 ChaCha20 block, keystream and AEAD vectors. Poly1305 is checked against RFC 8439 on its own.
+   `tools/kci_ref.py` already does the block check in Python. It proves the plumbing, not KCI-20 security.
+   Plus: a KAT per deck edge case (one loop repeated 20 times, for each loop) so every rotation set is exercised.
 1. **Heritage check:** a small script verifies the 8 per-loop action sequences the C round schedules are built from
    against the Python action functions (table in [[KCI-Loop-Model]]). This keeps the MtG model traceable.
 2. **Known-answer tests (KATs):** once the design is frozen, the portable C path generates vectors
