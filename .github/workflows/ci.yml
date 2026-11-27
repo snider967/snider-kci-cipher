@@ -1,0 +1,72 @@
+# KCI-20 CI. HARD RULE: this repository must never incur any cost (decision D-025, vault/Project/Decisions-Log.md).
+# Every job here is checked by tools/check_ci_cost.py, which runs first and fails the workflow if a rule is broken:
+#   - standard GitHub-hosted runners only (free and unlimited for public repositories; "larger runners" are always billed)
+#   - every job runs only while the repository is public (a private repo would spend the free-minute quota;
+#     macOS minutes count 10x there)
+#   - every job has a short timeout; superseded runs are cancelled
+#   - no schedules, no caches, no uploaded artifacts or packages, no third-party actions, no secrets
+# Copyright 2026 snider967. Licensed under the Apache License, Version 2.0.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cost-guard:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -I tools/check_ci_cost.py
+
+  test:
+    needs: cost-guard
+    if: ${{ !github.event.repository.private }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04,     cc: gcc,   name: linux-x86_64-gcc }
+          - { os: ubuntu-24.04,     cc: clang, name: linux-x86_64-clang }
+          - { os: ubuntu-24.04-arm, cc: gcc,   name: linux-arm64-gcc }
+          - { os: macos-15,         cc: clang, name: macos-arm64-clang }
+    name: test (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: make test
+        run: make CC=${{ matrix.cc }} test
+      - name: make sanitize (ASan + UBSan)
+        run: make CC=${{ matrix.cc }} sanitize
+      - name: portable paths (no SIMD, no __int128)
+        run: make CC=${{ matrix.cc }} BUILD=build-portable CFLAGS="-O2 -DKCI_NO_SIMD -DKCI_NO_INT128" test
+
+  variants:
+    needs: cost-guard
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: install 32-bit toolchain
+        run: sudo apt-get update -q && sudo apt-get install -y -q gcc-multilib
+      - name: 32-bit x86 (gcc -m32)
+        run: make BUILD=build-m32 CFLAGS="-O2 -m32" test
+      - name: CMake build + ctest
+        run: |
+          cmake -S . -B build-cmake -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-cmake
+          ctest --test-dir build-cmake --output-on-failure
+          sh tests/cli_test.sh build-cmake/kci
