@@ -46,3 +46,12 @@ Back to [[00-Index]] · Session note: [[2026-11-27-Session-02]] · Template: [[A
 ## Carry-over to next session
 - Security analysis per spec §12 (started right after this audit, same session).
 - Owner: confirm D-023 and the Q6/Q7/Q8 defaults; decide whether to add Windows to CI (free on public repos, within D-025).
+
+## Addendum — end of day (after PRs #3, #4, #5)
+- Repo: `main` at `235cf8d`; CI run 46059631082 green on all 6 jobs with spec v0.4 (1336 / 1312 / 1334 library checks, 71 CLI checks).
+- Notes changed since the audit and re-checked: 00-Index (status, HEAD, branches), KCI-Primitive-Design (v0.4 accepted: §4.3 table and provenance, §10 P7/P8,
+  §11 KAT, §13), Decisions-Log (D-026–D-028), Open-Questions (Q20, Q21 answered), Cryptanalysis-Notes (v0.4 results), Test-Vector-Strategy (v0.4 KATs, CI),
+  Performance-Notes (v0.4 speed), Repository-Map (analysis tools, header), README (v0.4, `make analysis`, format 2).
+- Scripted check: 0 dead wikilinks; every note is in the index.
+- Stale items found and fixed: references to PR #4/#5 as open, the old `main` HEAD, "v0.4 draft" headings, the README's `c-refactor` branch.
+- Still open: as in the final handoff of [[2026-11-27-Session-02]].

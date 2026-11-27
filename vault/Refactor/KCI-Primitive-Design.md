@@ -3,7 +3,7 @@
 Back to [[00-Index]] · Decisions: D-007, D-009, D-010, D-012..D-024 in [[Decisions-Log]] · Layout: [[C-Architecture-Plan]] · Speed: [[Performance-Notes]]
 
 **Status:** **v0.4 accepted** (2026-11-27, P7/P8 → D-027/D-028): retuned loop rotation sets (§4.3, §13) and file format 2. v0.2 was signed off as P1–P6 → D-017..D-022. v0.3 adds raw/AEAD domain separation (Q19 → D-024).
-Implemented in C (v0.4: draft PR #4, implementation PR #5). Changes from here need a new version and a decision entry.
+Implemented in C and on `main` (v0.4: draft PR #4, implementation PR #5). Changes from here need a new version and a decision entry.
 Reference sketch: `tools/kci_ref.py` (pure Python, used to check this spec; it is not the KAT source).
 
 > ⚠️ KCI-20 is an original, unreviewed cipher. It is for research and fun. Do not present it as secure for real data.
