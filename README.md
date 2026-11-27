@@ -8,6 +8,10 @@ Krark-Clan Ironworks loops each of its 20 rounds plays. The spec is `vault/Refac
 
 > **Warning:** KCI-20 is original, unreviewed cryptography. It is a research and hobby project; do not use it to protect real data.
 
+**CI** (`.github/workflows/ci.yml`): gcc and clang on Linux x86-64, Linux ARM64 and macOS ARM64, plus ASan/UBSan, portable,
+32-bit and CMake builds. Hard rule: the project costs $0 — free standard runners on the public repo only, checked by
+`tools/check_ci_cost.py` before anything else runs.
+
 Build and test (GNU make + a C11 compiler):
 ```
 make test        # library + known-answer tests

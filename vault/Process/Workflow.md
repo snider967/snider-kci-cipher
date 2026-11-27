@@ -2,6 +2,11 @@
 
 Back to [[00-Index]]
 
+## Hard rules
+- **$0 cost, always (D-025).** Nothing in this project may incur a charge: no paid services, no billed GitHub features. CI uses free
+  standard runners on the public repo only; every workflow change must pass `python3 -I tools/check_ci_cost.py`. If the repo is ever made
+  private, CI stops by design. Ask the owner before anything that could cost money.
+
 ## During a session
 - Record every decision in [[Decisions-Log]] when it is made; move answered items out of [[Open-Questions]].
 - Update [[Porting-Map]] status as functions are ported or tested.
